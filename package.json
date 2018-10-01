@@ -9,6 +9,6 @@
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "@types/node": "^10.11.2"
+    "@types/node": "^10.11.3"
   }
 }

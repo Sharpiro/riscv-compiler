@@ -7,6 +7,7 @@ export class Command {
 }
 
 export class AddCommand extends Command {
+    readonly name = "add"
     sourceRegisterOne = 0
     sourceRegisterTwo = 0
     destinationRegister = 0
@@ -18,11 +19,24 @@ export class AddCommand extends Command {
 }
 
 export class AddImmediateCommand extends Command {
+    readonly name = "addi"
     sourceRegisterOne = 0
     constantValue = 0
     destinationRegister = 0
 
     constructor(partial?: Partial<AddImmediateCommand>) {
+        super()
+        Object.assign(this, partial)
+    }
+}
+
+export class StoreDoubleWordCommand extends Command {
+    readonly name = "sd"
+    sourceRegister = 0
+    offset = 0
+    destinationRegister = 0
+
+    constructor(partial?: Partial<StoreDoubleWordCommand>) {
         super()
         Object.assign(this, partial)
     }

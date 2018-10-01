@@ -1,21 +1,21 @@
-import { Compiler } from "./compiler";
+import { RiscVCompiler } from "./riscVCompiler";
 import { Runner } from "./runner";
 
-// expected: [0, 2, 3, 5, 0 ...]
+// const cppSource = "int x = 2 + 3;"
+
+// const cCompiler = new CLangCompiler(cppSource)
+// cCompiler.compile()
+
 const source =
-    `addi x1, x0, 2
-addi x2, x0, 3
-add x3, x1, x2`
-const compiler = new Compiler(source)
-const commands = compiler.compile()
+    `addi x5, x0, 5
+sd x5, 16(x1)`
+const riscVCompiler = new RiscVCompiler(source)
+const commands = riscVCompiler.compile()
 const runner = new Runner(commands)
 runner.run()
 
-
-
-// run(commands)
 // console.log(commands)
-console.log(runner.registers.registers.slice(0, 5))
+// console.log(runner.registers.registers.slice(0, 5))
 
 // function run(commands: CommandSyntax[]) {
 

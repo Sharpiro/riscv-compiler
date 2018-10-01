@@ -1,12 +1,12 @@
 import { SourceCode } from "./sourceCode";
-import { Command, AddCommand, AddImmediateCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand } from "./addCommandSyntax";
 
-export class Compiler {
+export class RiscVCompiler {
     readonly sourceCode: SourceCode
 
     constructor(public readonly source: string) {
         source = source + "\0"
-        this.sourceCode = new SourceCode(source, 0)
+        this.sourceCode = new SourceCode(source)
     }
 
     compile(): Command[] {
@@ -32,6 +32,9 @@ export class Compiler {
             case "addi":
                 command = this.parseAddImmediateCommand()
                 break;
+            case "sd":
+                command = this.parseStoreDoubleWordCommand()
+                break;
             default:
                 throw new Error(`invalid command '${commandName}'`)
         }
@@ -48,7 +51,6 @@ export class Compiler {
     }
 
     private parseAddCommand(): AddCommand {
-        const commandName = "add"
         const destinationRegister = this.parseRegister()
         const comma1 = this.sourceCode.nextChar()
         if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
@@ -59,7 +61,6 @@ export class Compiler {
         this.sourceCode.nextChar()
         const sourceRegister2 = this.parseRegister()
         return new AddCommand({
-            name: commandName,
             sourceRegisterOne: sourceRegister1,
             sourceRegisterTwo: sourceRegister2,
             destinationRegister: destinationRegister
@@ -67,7 +68,6 @@ export class Compiler {
     }
 
     private parseAddImmediateCommand(): AddImmediateCommand {
-        const commandName = "addi"
         const destinationRegister = this.parseRegister()
         const comma1 = this.sourceCode.nextChar()
         if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
@@ -82,9 +82,31 @@ export class Compiler {
             throw new Error(`invalid constant value '${constantValueText}'`)
         }
         return new AddImmediateCommand({
-            name: commandName,
             sourceRegisterOne: sourceRegister1,
             constantValue: constantValue,
+            destinationRegister: destinationRegister
+        })
+    }
+
+    private parseStoreDoubleWordCommand(): StoreDoubleWordCommand {
+        const sourceRegister = this.parseRegister()
+        const comma1 = this.sourceCode.nextChar()
+        if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
+        this.sourceCode.nextChar()
+
+        const offsetString = this.parseTokenUntil("(")
+        const offset = +offsetString
+        if (isNaN(offset)) throw new Error(`Invalid offset ${offsetString}`)
+        this.sourceCode.nextChar()
+
+        const destinationRegisterString = this.parseTokenUntil(")")
+        const destinationRegister = this.parseRegisterFromString(destinationRegisterString)
+        if (isNaN(destinationRegister)) throw new Error(`Invalid offset ${destinationRegisterString}`)
+        this.sourceCode.nextChar()
+
+        return new StoreDoubleWordCommand({
+            sourceRegister: sourceRegister,
+            offset: offset,
             destinationRegister: destinationRegister
         })
     }
@@ -107,11 +129,15 @@ export class Compiler {
     // }
 
     private parseRegister(): number {
-        const register = this.parseToken()
-        if (!register.startsWith("x")) {
-            throw new Error(`Expected register starting with 'x', but instead was '${register}'`)
+        const registerToken = this.parseToken()
+        if (!registerToken.startsWith("x")) {
+            throw new Error(`Expected register starting with 'x', but instead was '${registerToken}'`)
         }
-        const numberSlice = register.slice(1)
+        return this.parseRegisterFromString(registerToken)
+    }
+
+    private parseRegisterFromString(registerToken: string): number {
+        const numberSlice = registerToken.slice(1)
         const registerNumber = +numberSlice
         return registerNumber
     }
@@ -125,5 +151,15 @@ export class Compiler {
             }
             token += this.sourceCode.nextChar()
         }
+    }
+
+    private parseTokenUntil(char: string): string {
+        let token = ""
+        let currentChar = this.sourceCode.peekChar()
+        while (currentChar !== char) {
+            token += this.sourceCode.nextChar()
+            currentChar = this.sourceCode.peekChar()
+        }
+        return token
     }
 }

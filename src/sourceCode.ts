@@ -2,6 +2,7 @@ export class SourceCode {
     private _currentLine = 1
     private _currentColumn = 1
 
+    currentIndex = 0
 
     get currentLine(): number {
         return this._currentLine
@@ -10,7 +11,7 @@ export class SourceCode {
         return this._currentColumn
     }
 
-    constructor(public source: string, public currentIndex: number) { }
+    constructor(public source: string) { }
 
     peekChar(): string {
         return this.source[this.currentIndex]
