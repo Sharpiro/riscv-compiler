@@ -76,7 +76,7 @@ export class RiscVCompiler {
         const comma2 = this.sourceCode.nextChar()
         if (comma2 !== ",") throw new Error(`expected ',', but was '${comma2}'`)
         this.sourceCode.nextChar()
-        const constantValueText = this.sourceCode.nextChar()
+        const constantValueText = this.parseToken()
         const constantValue = +constantValueText
         if (isNaN(constantValue)) {
             throw new Error(`invalid constant value '${constantValueText}'`)

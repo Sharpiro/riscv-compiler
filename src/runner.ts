@@ -1,4 +1,4 @@
-import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand, StoreWordCommand } from "./addCommandSyntax";
 import { Registers } from "./registers";
 import { Buffer } from "buffer"
 
@@ -23,6 +23,9 @@ export class Runner {
                 this.runAddImmediateCommand(command as AddImmediateCommand)
                 break
             case "sd":
+                this.runStoreWordCommand(command as StoreWordCommand)
+                break
+            case "sd":
                 this.runStoreDoubleWordCommand(command as StoreDoubleWordCommand)
                 break
             default:
@@ -43,11 +46,26 @@ export class Runner {
         this.registers.set(command.destinationRegister, result)
     }
 
+    private runStoreWordCommand(command: StoreWordCommand): void {
+        const sourceValue = this.registers.get(command.sourceRegister)
+        const baseAddress = this.registers.get(command.destinationRegister)
+        const index = baseAddress + command.offset
+        this.writeLE(sourceValue, index, 4)
+    }
+
     private runStoreDoubleWordCommand(command: StoreDoubleWordCommand): void {
         const sourceValue = this.registers.get(command.sourceRegister)
         const baseAddress = this.registers.get(command.destinationRegister)
         const index = baseAddress + command.offset
-        const test = 4294967296
-        this.memory.writeInt32LE(-257, index)
+        this.writeLE(sourceValue, index, 8)
+    }
+
+    private writeLE(value: number, offset: number, sizeBytes: number) {
+        const iterations = sizeBytes - 1
+        this.memory[offset] = value
+        for (let i = 0; i < iterations; i++) {
+            value = value >>> 8
+            this.memory[++offset] = value
+        }
     }
 }

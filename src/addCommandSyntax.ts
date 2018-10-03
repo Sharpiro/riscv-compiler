@@ -30,6 +30,18 @@ export class AddImmediateCommand extends Command {
     }
 }
 
+export class StoreWordCommand extends Command {
+    readonly name = "sw"
+    sourceRegister = 0
+    offset = 0
+    destinationRegister = 0
+
+    constructor(partial?: Partial<StoreDoubleWordCommand>) {
+        super()
+        Object.assign(this, partial)
+    }
+}
+
 export class StoreDoubleWordCommand extends Command {
     readonly name = "sd"
     sourceRegister = 0

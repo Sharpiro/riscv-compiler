@@ -7,7 +7,7 @@ import { Runner } from "./runner";
 // cCompiler.compile()
 
 const source =
-    `addi x5, x0, 5
+    `addi x5, x0, 65534
 sd x5, 16(x1)`
 const riscVCompiler = new RiscVCompiler(source)
 const commands = riscVCompiler.compile()
