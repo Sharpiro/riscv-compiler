@@ -1,10 +1,10 @@
-import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand, StoreWordCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, StoreCommand } from "./addCommandSyntax";
 import { Registers } from "./registers";
 import { Buffer } from "buffer"
 
 export class Runner {
     readonly registers = new Registers()
-    readonly memory = new Buffer(24)
+    readonly memory = Buffer.alloc(24)
 
     constructor(public commands: Command[]) { }
 
@@ -22,11 +22,9 @@ export class Runner {
             case "addi":
                 this.runAddImmediateCommand(command as AddImmediateCommand)
                 break
+            case "sw":
             case "sd":
-                this.runStoreWordCommand(command as StoreWordCommand)
-                break
-            case "sd":
-                this.runStoreDoubleWordCommand(command as StoreDoubleWordCommand)
+                this.runStoreCommand(command as StoreCommand)
                 break
             default:
                 throw new Error(`invalid command '${command.name}'`)
@@ -46,26 +44,32 @@ export class Runner {
         this.registers.set(command.destinationRegister, result)
     }
 
-    private runStoreWordCommand(command: StoreWordCommand): void {
-        const sourceValue = this.registers.get(command.sourceRegister)
-        const baseAddress = this.registers.get(command.destinationRegister)
-        const index = baseAddress + command.offset
-        this.writeLE(sourceValue, index, 4)
+    private runStoreCommand(command: StoreCommand): void {
+        const sourceValue = this.registers.get(command.dataRegister)
+        const baseAddress = this.registers.get(command.memoryRegister)
+        const index = baseAddress + command.memoryOffset
+        let byteSize: number
+        switch (command.name) {
+            case "sw":
+                byteSize = 4
+                break;
+            case "sd":
+                byteSize = 8
+                break;
+            default:
+                throw new Error(`invalid store command '${command.name}'`)
+        }
+        this.writeLEToMemory(sourceValue, index, byteSize)
     }
 
-    private runStoreDoubleWordCommand(command: StoreDoubleWordCommand): void {
-        const sourceValue = this.registers.get(command.sourceRegister)
-        const baseAddress = this.registers.get(command.destinationRegister)
-        const index = baseAddress + command.offset
-        this.writeLE(sourceValue, index, 8)
-    }
-
-    private writeLE(value: number, offset: number, sizeBytes: number) {
+    private writeLEToMemory(value: number, offset: number, sizeBytes: number) {
         const iterations = sizeBytes - 1
+        if (offset + iterations >= this.memory.length) throw new Error(`insufficient memory to write '${sizeBytes}' bytes @ offset '${offset}'`)
         this.memory[offset] = value
         for (let i = 0; i < iterations; i++) {
             value = value >>> 8
-            this.memory[++offset] = value
+            offset++
+            this.memory[offset] = value
         }
     }
 }

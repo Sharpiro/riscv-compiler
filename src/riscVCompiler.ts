@@ -1,5 +1,5 @@
 import { SourceCode } from "./sourceCode";
-import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand, StoreWordCommand, StoreCommand } from "./addCommandSyntax";
 
 export class RiscVCompiler {
     readonly sourceCode: SourceCode
@@ -32,9 +32,13 @@ export class RiscVCompiler {
             case "addi":
                 command = this.parseAddImmediateCommand()
                 break;
+            case "sw":
             case "sd":
-                command = this.parseStoreDoubleWordCommand()
+                command = this.parseStoreCommand(commandName)
                 break;
+            // case "lw":
+            //     command = this.parseLoadWordCommand()
+            //     break;
             default:
                 throw new Error(`invalid command '${commandName}'`)
         }
@@ -88,44 +92,32 @@ export class RiscVCompiler {
         })
     }
 
-    private parseStoreDoubleWordCommand(): StoreDoubleWordCommand {
-        const sourceRegister = this.parseRegister()
+    private parseStoreCommand(commandName: string): StoreCommand {
+        const dataRegister = this.parseRegister()
         const comma1 = this.sourceCode.nextChar()
         if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
         this.sourceCode.nextChar()
 
         const offsetString = this.parseTokenUntil("(")
-        const offset = +offsetString
-        if (isNaN(offset)) throw new Error(`Invalid offset ${offsetString}`)
+        const memoryOffset = +offsetString
+        if (isNaN(memoryOffset)) throw new Error(`Invalid offset ${offsetString}`)
         this.sourceCode.nextChar()
 
-        const destinationRegisterString = this.parseTokenUntil(")")
-        const destinationRegister = this.parseRegisterFromString(destinationRegisterString)
-        if (isNaN(destinationRegister)) throw new Error(`Invalid offset ${destinationRegisterString}`)
+        const memoryRegisterString = this.parseTokenUntil(")")
+        const memoryRegister = this.parseRegisterFromString(memoryRegisterString)
+        if (isNaN(memoryRegister)) throw new Error(`Invalid offset ${memoryRegisterString}`)
         this.sourceCode.nextChar()
 
-        return new StoreDoubleWordCommand({
-            sourceRegister: sourceRegister,
-            offset: offset,
-            destinationRegister: destinationRegister
+        return new StoreCommand({
+            name: commandName,
+            dataRegister: dataRegister,
+            memoryOffset: memoryOffset,
+            memoryRegister: memoryRegister
         })
     }
 
-    // parseParameters(): string[] {
-    //     const tokens: string[] = []
-    //     while (true) {
-    //         const token = this.parseToken()
-    //         if (token.length < 2) throw new Error(`Invalid token size line '${this.sourceCode.currentLine}', column '${this.sourceCode.currentColumn}'`)
-    //         tokens.push(token)
-    //         const currentChar = this.sourceCode.peekChar()
-    //         if (currentChar == "\n" || currentChar == "\0") {
-    //             return tokens
-    //         }
-    //         if (currentChar == ",") {
-    //             this.sourceCode.nextChar()
-    //         }
-    //         this.sourceCode.nextChar()
-    //     }
+    // private parseLoadWordCommand(): LoadWordCommand {
+
     // }
 
     private parseRegister(): number {
