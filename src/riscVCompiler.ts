@@ -32,6 +32,7 @@ export class RiscVCompiler {
             case "addi":
                 command = this.parseAddImmediateCommand()
                 break;
+            case "sb":
             case "sw":
             case "sd":
                 command = this.parseStoreCommand(commandName)

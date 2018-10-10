@@ -8,8 +8,10 @@ import { Runner } from "./runner";
 
 const source =
     `addi x5, x0, 65534
-sd x5, 16(x1)
-sw x5, 20(x1)`
+sb x5, 0(x2)
+sd x5, 9(x2)
+sw x5, 12(x2)
+lw x7, 12(x2)`
 const riscVCompiler = new RiscVCompiler(source)
 const commands = riscVCompiler.compile()
 const runner = new Runner(commands)
