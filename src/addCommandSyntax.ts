@@ -1,70 +1,64 @@
-export class Command {
-    name = ""
-
-    constructor(partial?: Partial<Command>) {
-        Object.assign(this, partial)
-    }
+export interface Command {
+    name: string
 }
 
-export class AddCommand extends Command {
+export class AddCommand implements Command {
     readonly name = "add"
     sourceRegisterOne = 0
     sourceRegisterTwo = 0
     destinationRegister = 0
 
     constructor(partial?: Partial<AddCommand>) {
-        super()
         Object.assign(this, partial)
     }
 }
 
-export class AddImmediateCommand extends Command {
+export class AddImmediateCommand implements Command {
     readonly name = "addi"
-    sourceRegisterOne = 0
+    sourceRegister = 0
     constantValue = 0
     destinationRegister = 0
 
     constructor(partial?: Partial<AddImmediateCommand>) {
-        super()
         Object.assign(this, partial)
     }
 }
 
-export class StoreCommand extends Command {
+export class MemoryCommand implements Command {
     name = "sw"
+    type: MemoryCommandType
     dataRegister = 0
     memoryOffset = 0
     memoryRegister = 0
 
-    constructor(partial?: Partial<StoreCommand>) {
-        super()
+    constructor(partial?: Partial<MemoryCommand>) {
         Object.assign(this, partial)
     }
 }
 
-export class StoreWordCommand extends Command {
-    name = "sw"
-    dataRegister = 0
-    memoryOffset = 0
-    memoryRegister = 0
+export type MemoryCommandType = "store" | "load" | undefined
 
-    constructor(partial?: Partial<StoreDoubleWordCommand>) {
-        super()
-        Object.assign(this, partial)
-    }
-}
+// export class StoreWordCommand extends Command {
+//     name = "sw"
+//     dataRegister = 0
+//     memoryOffset = 0
+//     memoryRegister = 0
 
-export class StoreDoubleWordCommand extends Command {
-    name = "sd"
-    dataRegister = 0
-    memoryOffset = 0
-    memoryRegister = 0
+//     constructor(partial?: Partial<StoreDoubleWordCommand>) {
+//         super()
+//     }
+// }
 
-    constructor(partial?: Partial<StoreDoubleWordCommand>) {
-        super()
-        Object.assign(this, partial)
-    }
-}
+// export class StoreDoubleWordCommand extends Command {
+//     name = "sd"
+//     dataRegister = 0
+//     memoryOffset = 0
+//     memoryRegister = 0
+
+//     constructor(partial?: Partial<StoreDoubleWordCommand>) {
+//         super()
+//     }
+// }
 
 // export class LoadWordCommand extends Command {
 //     readonly name = "lw"

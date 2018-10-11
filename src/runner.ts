@@ -1,4 +1,4 @@
-import { Command, AddCommand, AddImmediateCommand, StoreCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, MemoryCommand } from "./addCommandSyntax";
 import { Registers } from "./registers";
 import { Buffer } from "buffer"
 
@@ -25,11 +25,11 @@ export class Runner {
             case "sb":
             case "sw":
             case "sd":
-                this.runStoreCommand(command as StoreCommand)
-                break
             case "lw":
-                this.runLoadCommand(command as StoreCommand)
+                this.runMemoryCommand(command as MemoryCommand)
                 break
+            // this.runLoadCommand(command as MemoryCommand)
+            // break
             default:
                 throw new Error(`invalid command '${command.name}'`)
         }
@@ -43,12 +43,12 @@ export class Runner {
     }
 
     private runAddImmediateCommand(command: AddImmediateCommand): void {
-        const valueOne = this.registers.get(command.sourceRegisterOne)
+        const valueOne = this.registers.get(command.sourceRegister)
         const result = valueOne + command.constantValue
         this.registers.set(command.destinationRegister, result)
     }
 
-    private runStoreCommand(command: StoreCommand): void {
+    private runMemoryCommand(command: MemoryCommand): void {
         const sourceValue = this.registers.get(command.dataRegister)
         const baseAddress = this.registers.get(command.memoryRegister)
         let byteSize: number
@@ -57,6 +57,7 @@ export class Runner {
                 byteSize = 1
                 break
             case "sw":
+            case "lw":
                 byteSize = 4
                 break
             case "sd":
@@ -65,27 +66,12 @@ export class Runner {
             default:
                 throw new Error(`invalid store command '${command.name}'`)
         }
-        this.writeLEToMemory(sourceValue, baseAddress, command.memoryOffset, byteSize)
-    }
-
-    private runLoadCommand(command: StoreCommand): void {
-        const registerValue = this.registers.get(command.dataRegister)
-        const memoryBaseAddress = this.registers.get(command.memoryRegister)
-        let byteSize: number
-        switch (command.name) {
-            case "sb":
-                byteSize = 1
-                break
-            case "sw":
-                byteSize = 4
-                break
-            case "sd":
-                byteSize = 8
-                break
-            default:
-                throw new Error(`invalid store command '${command.name}'`)
+        if (command.type == "store") {
+            this.writeLEToMemory(sourceValue, baseAddress, command.memoryOffset, byteSize)
         }
-        this.writeLEToMemory(registerValue, memoryBaseAddress, command.memoryOffset, byteSize)
+        else {
+            this.readLEFromMemory(sourceValue, baseAddress, command.memoryOffset, byteSize)
+        }
     }
 
     private writeLEToMemory(value: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
@@ -100,5 +86,9 @@ export class Runner {
             index++
             this.memory[index] = value
         }
+    }
+
+    private readLEFromMemory(value: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
+
     }
 }

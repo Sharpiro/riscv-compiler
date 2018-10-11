@@ -1,5 +1,5 @@
 import { SourceCode } from "./sourceCode";
-import { Command, AddCommand, AddImmediateCommand, StoreDoubleWordCommand, StoreWordCommand, StoreCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType } from "./addCommandSyntax";
 
 export class RiscVCompiler {
     readonly sourceCode: SourceCode
@@ -35,11 +35,11 @@ export class RiscVCompiler {
             case "sb":
             case "sw":
             case "sd":
-                command = this.parseStoreCommand(commandName)
+                command = this.parseMemoryCommand(commandName, "store")
                 break;
-            // case "lw":
-            //     command = this.parseLoadWordCommand()
-            //     break;
+            case "lw":
+                command = this.parseMemoryCommand(commandName, "load")
+                break;
             default:
                 throw new Error(`invalid command '${commandName}'`)
         }
@@ -77,7 +77,7 @@ export class RiscVCompiler {
         const comma1 = this.sourceCode.nextChar()
         if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
         this.sourceCode.nextChar()
-        const sourceRegister1 = this.parseRegister()
+        const sourceRegister = this.parseRegister()
         const comma2 = this.sourceCode.nextChar()
         if (comma2 !== ",") throw new Error(`expected ',', but was '${comma2}'`)
         this.sourceCode.nextChar()
@@ -87,13 +87,13 @@ export class RiscVCompiler {
             throw new Error(`invalid constant value '${constantValueText}'`)
         }
         return new AddImmediateCommand({
-            sourceRegisterOne: sourceRegister1,
+            sourceRegister: sourceRegister,
             constantValue: constantValue,
             destinationRegister: destinationRegister
         })
     }
 
-    private parseStoreCommand(commandName: string): StoreCommand {
+    private parseMemoryCommand(commandName: string, commandType: MemoryCommandType): MemoryCommand {
         const dataRegister = this.parseRegister()
         const comma1 = this.sourceCode.nextChar()
         if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
@@ -109,8 +109,9 @@ export class RiscVCompiler {
         if (isNaN(memoryRegister)) throw new Error(`Invalid offset ${memoryRegisterString}`)
         this.sourceCode.nextChar()
 
-        return new StoreCommand({
+        return new MemoryCommand({
             name: commandName,
+            type: commandType,
             dataRegister: dataRegister,
             memoryOffset: memoryOffset,
             memoryRegister: memoryRegister
