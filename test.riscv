@@ -1,5 +1,2 @@
-function:
-addi sp, sp, -24
-sd x5, 16(sp)
-sd x6, 8(sp)
-sd x20, 0(sp)
+main:
+	addi x5, x0, 10

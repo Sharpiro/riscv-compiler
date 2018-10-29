@@ -1,6 +1,8 @@
 import { RiscVCompiler } from "./riscVCompiler";
 import { Runner } from "./runner";
+import * as fs from "fs"
 
+const data = fs.readFileSync("./test.riscv").toString()
 // const cppSource = "int x = 2 + 3;"
 
 // const cCompiler = new CLangCompiler(cppSource)
