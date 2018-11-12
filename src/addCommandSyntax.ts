@@ -1,38 +1,51 @@
-export interface Command {
-    name: string
+// export interface Command {
+//     name: string
+//     address: number
+// }
+
+export abstract class Command {
+    name = ""
+    address = 0
+
+    constructor() {
+        var x = 5;
+    }
 }
 
-export class AddCommand implements Command {
-    readonly name = "add"
+export class AddCommand extends Command {
     sourceRegisterOne = 0
     sourceRegisterTwo = 0
     destinationRegister = 0
 
     constructor(partial?: Partial<AddCommand>) {
+        super();
         Object.assign(this, partial)
+        this.name = "add"
     }
 }
 
-export class AddImmediateCommand implements Command {
-    readonly name = "addi"
+export class AddImmediateCommand extends Command {
     sourceRegister = 0
     constantValue = 0
     destinationRegister = 0
 
     constructor(partial?: Partial<AddImmediateCommand>) {
+        super();
         Object.assign(this, partial)
+        this.name = "addi"
     }
 }
 
-export class MemoryCommand implements Command {
-    name = "sw"
+export class MemoryCommand extends Command {
     type: MemoryCommandType
     dataRegister = 0
     memoryOffset = 0
     memoryRegister = 0
 
     constructor(partial?: Partial<MemoryCommand>) {
+        super();
         Object.assign(this, partial)
+        // this.name = "sw"
     }
 }
 

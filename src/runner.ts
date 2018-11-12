@@ -49,8 +49,7 @@ export class Runner {
     }
 
     private runMemoryCommand(command: MemoryCommand): void {
-        const sourceValue = this.registers.get(command.dataRegister)
-        const baseAddress = this.registers.get(command.memoryRegister)
+        const memoryAddress = this.registers.get(command.memoryRegister)
         let byteSize: number
         switch (command.name) {
             case "sb":
@@ -67,28 +66,40 @@ export class Runner {
                 throw new Error(`invalid store command '${command.name}'`)
         }
         if (command.type == "store") {
-            this.writeLEToMemory(sourceValue, baseAddress, command.memoryOffset, byteSize)
+            this.writeLEToMemory(command.dataRegister, memoryAddress, command.memoryOffset, byteSize)
         }
         else {
-            this.readLEFromMemory(sourceValue, baseAddress, command.memoryOffset, byteSize)
+            this.readLEFromMemory(command.dataRegister, memoryAddress, command.memoryOffset, byteSize)
         }
     }
 
-    private writeLEToMemory(value: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
-        let index = memoryBaseAddress + offset
+    private writeLEToMemory(dataRegister: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
+        let dataValue = this.registers.get(dataRegister)
         const iterations = sizeBytes - 1
+        let index = memoryBaseAddress + offset
         if (index + iterations >= this.memory.length) {
             throw new Error(`insufficient memory (${this.memory.length} bytes)to write '${sizeBytes}' bytes @ baseAddress '${memoryBaseAddress}', offset '${offset} (index '${index}')`)
         }
-        this.memory[index] = value
+        this.memory[index] = dataValue & 255
         for (let i = 0; i < iterations; i++) {
-            value = value >>> 8
+            dataValue = dataValue >>> 8
             index++
-            this.memory[index] = value
+            this.memory[index] = dataValue
         }
     }
 
-    private readLEFromMemory(value: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
+    private readLEFromMemory(dataRegister: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
+        const iterations = sizeBytes - 1
+        let startIndex = memoryBaseAddress + offset
+        let endIndex = memoryBaseAddress + offset + iterations
 
+        let number = this.memory[endIndex]
+        for (let index = endIndex - 1; index >= startIndex; index--) {
+            let shiftOp = number << 8;
+            let orOp = shiftOp | this.memory[index]
+            number = orOp
+        }
+
+        this.registers.set(dataRegister, number)
     }
 }

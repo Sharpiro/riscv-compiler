@@ -1,6 +1,7 @@
 import { RiscVCompiler } from "./riscVCompiler";
 import { Runner } from "./runner";
 import * as fs from "fs"
+import { AddCommand } from "./addCommandSyntax";
 
 const data = fs.readFileSync("./test.riscv").toString()
 // const cppSource = "int x = 2 + 3;"
@@ -8,8 +9,10 @@ const data = fs.readFileSync("./test.riscv").toString()
 // const cCompiler = new CLangCompiler(cppSource)
 // cCompiler.compile()
 
+const addCommand = new AddCommand()
+
 const source =
-    `addi x5, x0, 65534
+    `addi x5, x0, 258
 sb x5, 0(x2)
 sd x5, 8(x2)
 sw x5, 12(x2)
