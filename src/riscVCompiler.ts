@@ -1,29 +1,59 @@
 import { SourceCode } from "./sourceCode";
 import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType } from "./addCommandSyntax";
 
+export class Compilation {
+    constructor(readonly commands: Command[], readonly data: { [key: string]: Label }) { }
+}
+
+export class Label {
+    constructor(readonly name: string, readonly address: number) { }
+}
+
 export class RiscVCompiler {
     readonly sourceCode: SourceCode
+    private currentAddress = 0
+    private commandNames: { [key: string]: boolean } = { "add": true, "addi": true }
 
     constructor(public readonly source: string) {
         source = source + "\0"
         this.sourceCode = new SourceCode(source)
     }
 
-    compile(): Command[] {
+    compile(): Compilation {
         const commands: Command[] = []
+        let labels: { [key: string]: Label } = {}
 
         while (true) {
-            const command = this.parseCommandLine()
-            commands.push(command)
+            const commandOrLabel = this.parseLine()
+
+            if (commandOrLabel instanceof Command) {
+                labels[commandOrLabel.address] = commandOrLabel
+            }
+            else
+                commands.push(commandOrLabel)
             const currentChar = this.sourceCode.nextChar()
             if (currentChar == "\0") {
-                return commands
+                break;
             }
         }
+
+        return new Compilation(commands, labels)
     }
 
-    private parseCommandLine(): Command {
-        const commandName = this.parseCommandName()
+    private parseLine(): Command | Label {
+        const commandNameOrLabel = this.parseToken()
+        var isCommand = this.commandNames[commandNameOrLabel]
+        if (isCommand) {
+            const command = this.parseCommand(commandNameOrLabel)
+            return command
+        }
+        const label = this.parseLabel(commandNameOrLabel)
+        return label
+    }
+
+    private parseCommand(commandName: string): Command {
+        const currentChar = this.sourceCode.nextChar()
+        if (currentChar != " ") throw new Error("expected a space after command name")
         let command: Command
         switch (commandName) {
             case "add":
@@ -43,16 +73,19 @@ export class RiscVCompiler {
             default:
                 throw new Error(`invalid command '${commandName}'`)
         }
+        const address = this.currentAddress
+        command.address = address
+        this.currentAddress += 4
         // const parameters = this.parseParameters()
         // return { name: commandName, parameters: parameters }
         return command
     }
 
-    private parseCommandName(): string {
-        const commandName = this.parseToken()
+    private parseLabel(labelName: string): Label {
         const currentChar = this.sourceCode.nextChar()
-        if (currentChar != " ") throw new Error("expected a space after command name")
-        return commandName
+        if (currentChar != ":") throw new Error("expected a ':' after command name")
+        const label = this.parseToken()
+        return new Label(labelName, -1)
     }
 
     private parseAddCommand(): AddCommand {
@@ -140,7 +173,8 @@ export class RiscVCompiler {
         let token = ""
         while (true) {
             const currentChar = this.sourceCode.peekChar()
-            if (currentChar == " " || currentChar == "\n" || currentChar == "," || currentChar == "\0") { // what does removing && do???
+            if (currentChar == " " || currentChar == "\n" || currentChar == ","
+                || currentChar == ":") {
                 return token
             }
             token += this.sourceCode.nextChar()

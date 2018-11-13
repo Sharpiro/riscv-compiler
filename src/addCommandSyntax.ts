@@ -1,15 +1,6 @@
-// export interface Command {
-//     name: string
-//     address: number
-// }
-
 export abstract class Command {
     name = ""
     address = 0
-
-    constructor() {
-        var x = 5;
-    }
 }
 
 export class AddCommand extends Command {
