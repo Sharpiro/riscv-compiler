@@ -36,11 +36,41 @@ export class MemoryCommand extends Command {
     constructor(partial?: Partial<MemoryCommand>) {
         super();
         Object.assign(this, partial)
-        // this.name = "sw"
     }
 }
 
 export type MemoryCommandType = "store" | "load" | undefined
+
+export class JumpRegisterCommand extends Command {
+    returnRegister = 0
+
+    constructor(partial?: Partial<JumpRegisterCommand>) {
+        super();
+        Object.assign(this, partial)
+        this.name = "jr"
+    }
+}
+
+export class JumpAndLinkCommand extends Command {
+    returnRegister = 0
+    procedureAddress = 0
+
+    constructor(partial?: Partial<JumpAndLinkCommand>) {
+        super();
+        Object.assign(this, partial)
+        this.name = "jal"
+    }
+}
+
+// export class CallCommand extends Command {
+//     readonly returnRegister = 1
+
+//     constructor(partial?: Partial<JumpRegisterCommand>) {
+//         super();
+//         Object.assign(this, partial)
+//         this.name = "call"
+//     }
+// }
 
 // export class StoreWordCommand extends Command {
 //     name = "sw"

@@ -1,5 +1,5 @@
 import { SourceCode } from "./sourceCode";
-import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType, JumpRegisterCommand, JumpAndLinkCommand } from "./addCommandSyntax";
 
 export class Compilation {
     constructor(readonly commands: Command[], readonly data: { [key: string]: Label }) { }
@@ -12,43 +12,51 @@ export class Label {
 export class RiscVCompiler {
     readonly sourceCode: SourceCode
     private currentAddress = 0
-    private commandNames: { [key: string]: boolean } = { "add": true, "addi": true }
+    private commandNames: { [key: string]: boolean } = {
+        "add": true,
+        "addi": true,
+        "jr": true,
+        "call": true
+    }
+    labels: { [label: string]: Label } = {}
 
-    constructor(public readonly source: string) {
+    constructor(source: string) {
+        source = source.replace(/\r/g, "")
         source = source + "\0"
         this.sourceCode = new SourceCode(source)
     }
 
     compile(): Compilation {
         const commands: Command[] = []
-        let labels: { [key: string]: Label } = {}
 
         while (true) {
             const commandOrLabel = this.parseLine()
 
             if (commandOrLabel instanceof Command) {
-                labels[commandOrLabel.address] = commandOrLabel
+                commands.push(commandOrLabel)
             }
             else
-                commands.push(commandOrLabel)
-            const currentChar = this.sourceCode.nextChar()
+                this.labels[commandOrLabel.name] = commandOrLabel
+            let currentChar = this.sourceCode.peekChar()
             if (currentChar == "\0") {
+                currentChar = this.sourceCode.nextChar()
                 break;
             }
         }
-
-        return new Compilation(commands, labels)
+        return new Compilation(commands, this.labels)
     }
 
     private parseLine(): Command | Label {
         const commandNameOrLabel = this.parseToken()
+        let commandOrLabel: Command | Label
         var isCommand = this.commandNames[commandNameOrLabel]
         if (isCommand) {
-            const command = this.parseCommand(commandNameOrLabel)
-            return command
+            commandOrLabel = this.parseCommand(commandNameOrLabel)
+        } else {
+            commandOrLabel = this.parseLabel(commandNameOrLabel)
         }
-        const label = this.parseLabel(commandNameOrLabel)
-        return label
+        const currentChar = this.sourceCode.nextChar()
+        return commandOrLabel
     }
 
     private parseCommand(commandName: string): Command {
@@ -70,6 +78,15 @@ export class RiscVCompiler {
             case "lw":
                 command = this.parseMemoryCommand(commandName, "load")
                 break;
+            case "jr":
+                command = this.parseJumpRegisterCommand(commandName)
+                break;
+            case "jal":
+                command = this.parseJumpRegisterCommand(commandName)
+                break;
+            case "call":
+                command = this.parseCallCommand(commandName)
+                break;
             default:
                 throw new Error(`invalid command '${commandName}'`)
         }
@@ -82,10 +99,9 @@ export class RiscVCompiler {
     }
 
     private parseLabel(labelName: string): Label {
-        const currentChar = this.sourceCode.nextChar()
-        if (currentChar != ":") throw new Error("expected a ':' after command name")
-        const label = this.parseToken()
-        return new Label(labelName, -1)
+        let currentChar = this.sourceCode.nextChar()
+        if (currentChar != ":") throw new Error("expected a ':' after label name")
+        return new Label(labelName, this.currentAddress)
     }
 
     private parseAddCommand(): AddCommand {
@@ -113,7 +129,7 @@ export class RiscVCompiler {
         const sourceRegister = this.parseRegister()
         const comma2 = this.sourceCode.nextChar()
         if (comma2 !== ",") throw new Error(`expected ',', but was '${comma2}'`)
-        this.sourceCode.nextChar()
+        const temp = this.sourceCode.nextChar()
         const constantValueText = this.parseToken()
         const constantValue = +constantValueText
         if (isNaN(constantValue)) {
@@ -151,8 +167,34 @@ export class RiscVCompiler {
         })
     }
 
-    // private parseLoadWordCommand(): LoadWordCommand {
+    private parseJumpRegisterCommand(commandName: string): JumpRegisterCommand {
+        const returnRegister = this.parseRegister()
+        return new JumpRegisterCommand({
+            name: commandName,
+            returnRegister: returnRegister
+        })
+    }
 
+
+    private parseCallCommand(commandName: string): JumpAndLinkCommand {
+        const labelName = this.parseToken()
+        const label = this.labels[labelName]
+        if (!label) {
+            throw new Error(`Could not find label with name '${labelName}'`)
+        }
+        return new JumpAndLinkCommand({
+            name: commandName,
+            returnRegister: 1,
+            procedureAddress: label.address
+        })
+    }
+
+    // private parseJumpAndLinkCommand(commandName: string): JumpRegisterCommand {
+    //     const returnRegister = this.parseRegister()
+    //     return new JumpRegisterCommand({
+    //         name: commandName,
+    //         returnRegister: returnRegister
+    //     })
     // }
 
     private parseRegister(): number {

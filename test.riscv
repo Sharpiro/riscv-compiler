@@ -1,3 +1,6 @@
+func:
 addi x5, x0, 10
+jr x1
 main:
-	addi x5, x0, 10
+addi x5, x0, 1
+call func
