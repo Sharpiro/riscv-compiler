@@ -1,33 +1,46 @@
+import {
+    AddCommand, AddImmediateCommand, Command, JumpAndLinkCommand,
+    JumpAndLinkRegisterCommand, MemoryCommand, MemoryCommandType
+} from "./addCommandSyntax";
 import { SourceCode } from "./sourceCode";
-import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType, JumpAndLinkRegisterCommand, JumpAndLinkCommand } from "./addCommandSyntax";
 
 export class Compilation {
-    constructor(readonly commands: Command[], readonly labels: { [key: string]: Label }) { }
+    readonly commands: Command[]
+    readonly labels: { [key: string]: Label }
+
+    constructor(commands: Command[], labels: { [key: string]: Label }) {
+        this.commands = commands
+        this.labels = labels
+    }
 }
 
 export class Label {
-    constructor(readonly name: string, readonly address: number) { }
+    readonly name: string
+    readonly address: number
+
+    constructor(name: string, address: number) {
+        this.name = name
+        this.address = address
+    }
 }
 
 export class RiscVCompiler {
-    readonly sourceCode: SourceCode
-    readonly commandSizeBytes = 4
-
+    private readonly commandSizeBytes = 4
+    private readonly labels: { [label: string]: Label } = {}
+    private readonly sourceCode: SourceCode
     private currentAddress = 0
-    private commandNames: { [key: string]: boolean } = {
-        "add": true,
-        "addi": true,
-        "sd": true,
-        "ld": true,
-        "jr": true,
-        "call": true
-    }
-    labels: { [label: string]: Label } = {}
 
-    constructor(source: string) {
-        source = source.replace(/\r/g, "")
-        source = source + "\0"
-        this.sourceCode = new SourceCode(source)
+    private commandNames: { [key: string]: boolean } = {
+        add: true,
+        addi: true,
+        sd: true,
+        ld: true,
+        jr: true,
+        call: true
+    }
+
+    constructor(sourceCode: SourceCode) {
+        this.sourceCode = sourceCode
     }
 
     compile(): Compilation {
@@ -38,11 +51,10 @@ export class RiscVCompiler {
             if (commandOrLabel instanceof Command) {
                 commands[commandOrLabel.address] = commandOrLabel
 
-            }
-            else
+            } else
                 this.labels[commandOrLabel.name] = commandOrLabel
             let currentChar = this.sourceCode.peekChar()
-            if (currentChar == "\0") {
+            if (currentChar === "\0") {
                 currentChar = this.sourceCode.nextChar()
                 break;
             }
@@ -59,7 +71,7 @@ export class RiscVCompiler {
     private parseLine(): Command | Label {
         const commandNameOrLabel = this.parseToken()
         let commandOrLabel: Command | Label
-        var isCommand = this.commandNames[commandNameOrLabel]
+        const isCommand = this.commandNames[commandNameOrLabel]
         if (isCommand) {
             commandOrLabel = this.parseCommand(commandNameOrLabel)
         } else {
@@ -71,7 +83,7 @@ export class RiscVCompiler {
 
     private parseCommand(commandName: string): Command {
         const currentChar = this.sourceCode.nextChar()
-        if (currentChar != " ") throw new Error("expected a space after command name")
+        if (currentChar !== " ") throw new Error("expected a space after command name")
         let command: Command
         switch (commandName) {
             case "add":
@@ -113,8 +125,8 @@ export class RiscVCompiler {
     }
 
     private parseLabel(labelName: string): Label {
-        let currentChar = this.sourceCode.nextChar()
-        if (currentChar != ":") throw new Error("expected a ':' after label name")
+        const currentChar = this.sourceCode.nextChar()
+        if (currentChar !== ":") throw new Error("expected a ':' after label name")
         return new Label(labelName, this.currentAddress)
     }
 
@@ -123,15 +135,15 @@ export class RiscVCompiler {
         const comma1 = this.sourceCode.nextChar()
         if (comma1 !== ",") throw new Error(`expected ',', but was '${comma1}'`)
         this.sourceCode.nextChar()
-        const sourceRegister1 = this.parseRegister()
+        const sourceRegisterOne = this.parseRegister()
         const comma2 = this.sourceCode.nextChar()
         if (comma2 !== ",") throw new Error(`expected ',', but was '${comma2}'`)
         this.sourceCode.nextChar()
-        const sourceRegister2 = this.parseRegister()
+        const sourceRegisterTwo = this.parseRegister()
         return new AddCommand({
-            sourceRegisterOne: sourceRegister1,
-            sourceRegisterTwo: sourceRegister2,
-            destinationRegister: destinationRegister
+            sourceRegisterOne,
+            sourceRegisterTwo,
+            destinationRegister
         })
     }
 
@@ -150,9 +162,9 @@ export class RiscVCompiler {
             throw new Error(`invalid constant value '${constantValueText}'`)
         }
         return new AddImmediateCommand({
-            sourceRegister: sourceRegister,
-            constantValue: constantValue,
-            destinationRegister: destinationRegister
+            sourceRegister,
+            constantValue,
+            destinationRegister
         })
     }
 
@@ -175,9 +187,9 @@ export class RiscVCompiler {
         return new MemoryCommand({
             name: commandName,
             type: commandType,
-            dataRegister: dataRegister,
-            memoryOffset: memoryOffset,
-            memoryRegister: memoryRegister
+            dataRegister,
+            memoryOffset,
+            memoryRegister
         })
     }
 
@@ -185,7 +197,7 @@ export class RiscVCompiler {
         const returnRegister = this.parseRegister()
         return new JumpAndLinkRegisterCommand({
             name: commandName,
-            returnRegister: returnRegister
+            returnRegister
         })
     }
 
@@ -195,7 +207,6 @@ export class RiscVCompiler {
             returnRegister: 1
         })
     }
-
 
     private parseCallCommand(commandName: string): JumpAndLinkCommand {
         const labelName = this.parseToken()
@@ -236,8 +247,8 @@ export class RiscVCompiler {
         let token = ""
         while (true) {
             const currentChar = this.sourceCode.peekChar()
-            if (currentChar == " " || currentChar == "\n" || currentChar == ","
-                || currentChar == ":") {
+            if (currentChar === " " || currentChar === "\n" || currentChar === ","
+                || currentChar === ":") {
                 return token
             }
             token += this.sourceCode.nextChar()

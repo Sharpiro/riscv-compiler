@@ -3,24 +3,23 @@ import { SourceCode } from "./sourceCode";
 export class CLangCompiler {
     sourceCode: SourceCode
 
-    constructor(public readonly source: string) {
-        this.sourceCode = new SourceCode(source)
+    constructor(sourceCode: SourceCode) {
+        this.sourceCode = sourceCode
     }
 
     compile(): void {
-
+        throw new Error("not implemented")
     }
 
     private parseStatement() {
-
+        throw new Error("not implemented")
     }
 
-
     private parseDeclarationStatement() {
-
+        throw new Error("not implemented")
     }
 
     private parseExpressionStatement() {
-
+        throw new Error("not implemented")
     }
 }

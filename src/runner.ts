@@ -1,19 +1,35 @@
-import { Command, AddCommand, AddImmediateCommand, MemoryCommand, JumpAndLinkCommand, JumpAndLinkRegisterCommand } from "./addCommandSyntax";
-import { Registers } from "./registers";
 import { Buffer } from "buffer"
+import {
+    AddCommand, AddImmediateCommand, Command,
+    JumpAndLinkCommand, JumpAndLinkRegisterCommand, MemoryCommand
+} from "./addCommandSyntax";
+import { Registers } from "./registers";
 import { Compilation } from "./riscVCompiler";
 
+export class Execution {
+    registers: Registers
+    memory: Buffer
+
+    constructor(registers: Registers, memory: Buffer) {
+        this.registers = registers
+        this.memory = memory
+    }
+}
+
 export class Runner {
+    private readonly compilation: Compilation
+    private readonly commandSizeBytes = 4
+    private readonly registers = new Registers()
+    private readonly memory = Buffer.alloc(32)
+
     private programCounter = 0
 
-    readonly commandSizeBytes = 4
-    readonly registers = new Registers()
-    readonly memory = Buffer.alloc(32)
+    constructor(compilation: Compilation) {
+        this.compilation = compilation
+    }
 
-    constructor(public readonly compilation: Compilation) { }
-
-    run(): void {
-        const mainFunctionLabel = this.compilation.labels["main"]
+    run(): Execution {
+        const mainFunctionLabel = this.compilation.labels.main
         if (!mainFunctionLabel) {
             throw new Error("Could not find 'main' entry point into program")
         }
@@ -23,6 +39,8 @@ export class Runner {
             const currentCommand = this.compilation.commands[this.programCounter]
             this.runCommand(currentCommand)
         }
+
+        return new Execution(this.registers, this.memory)
     }
 
     private runCommand(command: Command): void {
@@ -90,10 +108,9 @@ export class Runner {
             default:
                 throw new Error(`invalid store command '${command.name}'`)
         }
-        if (command.type == "store") {
+        if (command.type === "store") {
             this.writeLEToMemory(command.dataRegister, memoryAddress, command.memoryOffset, byteSize)
-        }
-        else {
+        } else {
             this.readLEFromMemory(command.dataRegister, memoryAddress, command.memoryOffset, byteSize)
         }
     }
@@ -105,10 +122,9 @@ export class Runner {
 
     private runJumpAndLinkRegisterCommand(command: JumpAndLinkRegisterCommand): void {
         const returnAddress = this.registers.get(command.returnRegister)
-        if (returnAddress == -1) {
+        if (returnAddress === -1) {
             this.programCounter += this.commandSizeBytes
-        }
-        else {
+        } else {
             this.programCounter = returnAddress + command.offset
         }
     }
@@ -118,7 +134,8 @@ export class Runner {
         const iterations = sizeBytes - 1
         let index = memoryBaseAddress + offset
         if (index + iterations >= this.memory.length) {
-            throw new Error(`insufficient memory (${this.memory.length} bytes)to write '${sizeBytes}' bytes @ baseAddress '${memoryBaseAddress}', offset '${offset} (index '${index}')`)
+            throw new Error(`insufficient memory (${this.memory.length} bytes)to write '${sizeBytes}'
+                bytes @ baseAddress '${memoryBaseAddress}', offset '${offset} (index '${index}')`)
         }
         this.memory[index] = dataValue & 255
         for (let i = 0; i < iterations; i++) {
@@ -130,13 +147,13 @@ export class Runner {
 
     private readLEFromMemory(dataRegister: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
         const iterations = sizeBytes - 1
-        let startIndex = memoryBaseAddress + offset
-        let endIndex = memoryBaseAddress + offset + iterations
+        const startIndex = memoryBaseAddress + offset
+        const endIndex = memoryBaseAddress + offset + iterations
 
         let number = this.memory[endIndex]
         for (let index = endIndex - 1; index >= startIndex; index--) {
-            let shiftOp = number << 8;
-            let orOp = shiftOp | this.memory[index]
+            const shiftOp = number << 8;
+            const orOp = shiftOp | this.memory[index]
             number = orOp
         }
 
