@@ -1,8 +1,8 @@
 import { SourceCode } from "./sourceCode";
-import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType, JumpRegisterCommand, JumpAndLinkCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, MemoryCommand, MemoryCommandType, JumpAndLinkRegisterCommand, JumpAndLinkCommand } from "./addCommandSyntax";
 
 export class Compilation {
-    constructor(readonly commands: Command[], readonly data: { [key: string]: Label }) { }
+    constructor(readonly commands: Command[], readonly labels: { [key: string]: Label }) { }
 }
 
 export class Label {
@@ -11,10 +11,14 @@ export class Label {
 
 export class RiscVCompiler {
     readonly sourceCode: SourceCode
+    readonly commandSizeBytes = 4
+
     private currentAddress = 0
     private commandNames: { [key: string]: boolean } = {
         "add": true,
         "addi": true,
+        "sd": true,
+        "ld": true,
         "jr": true,
         "call": true
     }
@@ -28,12 +32,12 @@ export class RiscVCompiler {
 
     compile(): Compilation {
         const commands: Command[] = []
-
         while (true) {
             const commandOrLabel = this.parseLine()
 
             if (commandOrLabel instanceof Command) {
-                commands.push(commandOrLabel)
+                commands[commandOrLabel.address] = commandOrLabel
+
             }
             else
                 this.labels[commandOrLabel.name] = commandOrLabel
@@ -43,6 +47,12 @@ export class RiscVCompiler {
                 break;
             }
         }
+
+        // todo remove this hax
+        const temp: any = undefined
+        commands.push(temp)
+        commands.push(temp)
+        commands.push(temp)
         return new Compilation(commands, this.labels)
     }
 
@@ -76,13 +86,17 @@ export class RiscVCompiler {
                 command = this.parseMemoryCommand(commandName, "store")
                 break;
             case "lw":
+            case "ld":
                 command = this.parseMemoryCommand(commandName, "load")
                 break;
             case "jr":
-                command = this.parseJumpRegisterCommand(commandName)
+                command = this.parseJumpRegisterPseudoCommand(commandName)
                 break;
             case "jal":
-                command = this.parseJumpRegisterCommand(commandName)
+                command = this.parseJumpRegisterPseudoCommand(commandName)
+                break;
+            case "ret":
+                command = this.parseReturnPseudoCommand(commandName)
                 break;
             case "call":
                 command = this.parseCallCommand(commandName)
@@ -92,7 +106,7 @@ export class RiscVCompiler {
         }
         const address = this.currentAddress
         command.address = address
-        this.currentAddress += 4
+        this.currentAddress += this.commandSizeBytes
         // const parameters = this.parseParameters()
         // return { name: commandName, parameters: parameters }
         return command
@@ -167,11 +181,18 @@ export class RiscVCompiler {
         })
     }
 
-    private parseJumpRegisterCommand(commandName: string): JumpRegisterCommand {
+    private parseJumpRegisterPseudoCommand(commandName: string): JumpAndLinkRegisterCommand {
         const returnRegister = this.parseRegister()
-        return new JumpRegisterCommand({
+        return new JumpAndLinkRegisterCommand({
             name: commandName,
             returnRegister: returnRegister
+        })
+    }
+
+    private parseReturnPseudoCommand(commandName: string): JumpAndLinkRegisterCommand {
+        return new JumpAndLinkRegisterCommand({
+            name: commandName,
+            returnRegister: 1
         })
     }
 

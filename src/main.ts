@@ -16,7 +16,7 @@ const source = fs.readFileSync("C:/gitbase/Tools/riscv/test.riscv").toString()
 // lw x7, 12(x2)`
 const riscVCompiler = new RiscVCompiler(source)
 const compilation = riscVCompiler.compile()
-const runner = new Runner(compilation.commands)
+const runner = new Runner(compilation)
 runner.run()
 
 // console.log(commands)

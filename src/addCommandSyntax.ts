@@ -41,13 +41,14 @@ export class MemoryCommand extends Command {
 
 export type MemoryCommandType = "store" | "load" | undefined
 
-export class JumpRegisterCommand extends Command {
+export class JumpAndLinkRegisterCommand extends Command {
+    unknownRegister = 0
     returnRegister = 0
+    offset = 0
 
-    constructor(partial?: Partial<JumpRegisterCommand>) {
+    constructor(partial?: Partial<JumpAndLinkRegisterCommand>) {
         super();
         Object.assign(this, partial)
-        this.name = "jr"
     }
 }
 
@@ -58,7 +59,6 @@ export class JumpAndLinkCommand extends Command {
     constructor(partial?: Partial<JumpAndLinkCommand>) {
         super();
         Object.assign(this, partial)
-        this.name = "jal"
     }
 }
 

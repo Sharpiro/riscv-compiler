@@ -1,20 +1,32 @@
-import { Command, AddCommand, AddImmediateCommand, MemoryCommand } from "./addCommandSyntax";
+import { Command, AddCommand, AddImmediateCommand, MemoryCommand, JumpAndLinkCommand, JumpAndLinkRegisterCommand } from "./addCommandSyntax";
 import { Registers } from "./registers";
 import { Buffer } from "buffer"
+import { Compilation } from "./riscVCompiler";
 
 export class Runner {
-    readonly registers = new Registers()
-    readonly memory = Buffer.alloc(24)
+    private programCounter = 0
 
-    constructor(public commands: Command[]) { }
+    readonly commandSizeBytes = 4
+    readonly registers = new Registers()
+    readonly memory = Buffer.alloc(32)
+
+    constructor(public readonly compilation: Compilation) { }
 
     run(): void {
-        for (const command of this.commands) {
-            this.runCommand(command)
+        const mainFunctionLabel = this.compilation.labels["main"]
+        if (!mainFunctionLabel) {
+            throw new Error("Could not find 'main' entry point into program")
+        }
+
+        this.programCounter = mainFunctionLabel.address
+        while (this.programCounter < this.compilation.commands.length) {
+            const currentCommand = this.compilation.commands[this.programCounter]
+            this.runCommand(currentCommand)
         }
     }
 
     private runCommand(command: Command): void {
+        let incrementProgramCounter = true
         switch (command.name) {
             case "add":
                 this.runAddCommand(command as AddCommand)
@@ -26,12 +38,24 @@ export class Runner {
             case "sw":
             case "sd":
             case "lw":
+            case "ld":
                 this.runMemoryCommand(command as MemoryCommand)
                 break
-            // this.runLoadCommand(command as MemoryCommand)
-            // break
+            case "call":
+                // case "jal":
+                this.runJumpAndLinkCommand(command as JumpAndLinkCommand)
+                incrementProgramCounter = false
+                break
+            case "jr":
+                this.runJumpAndLinkRegisterCommand(command as JumpAndLinkRegisterCommand)
+                incrementProgramCounter = false
+                break
             default:
                 throw new Error(`invalid command '${command.name}'`)
+        }
+
+        if (incrementProgramCounter) {
+            this.programCounter += this.commandSizeBytes
         }
     }
 
@@ -43,9 +67,9 @@ export class Runner {
     }
 
     private runAddImmediateCommand(command: AddImmediateCommand): void {
-        const valueOne = this.registers.get(command.sourceRegister)
-        const result = valueOne + command.constantValue
-        this.registers.set(command.destinationRegister, result)
+        const sourceRegisterValue = this.registers.get(command.sourceRegister)
+        const addResult = sourceRegisterValue + command.constantValue
+        this.registers.set(command.destinationRegister, addResult)
     }
 
     private runMemoryCommand(command: MemoryCommand): void {
@@ -60,6 +84,7 @@ export class Runner {
                 byteSize = 4
                 break
             case "sd":
+            case "ld":
                 byteSize = 8
                 break
             default:
@@ -70,6 +95,21 @@ export class Runner {
         }
         else {
             this.readLEFromMemory(command.dataRegister, memoryAddress, command.memoryOffset, byteSize)
+        }
+    }
+
+    private runJumpAndLinkCommand(command: JumpAndLinkCommand): void {
+        this.registers.set(command.returnRegister, this.programCounter + this.commandSizeBytes)
+        this.programCounter = command.procedureAddress
+    }
+
+    private runJumpAndLinkRegisterCommand(command: JumpAndLinkRegisterCommand): void {
+        const returnAddress = this.registers.get(command.returnRegister)
+        if (returnAddress == -1) {
+            this.programCounter += this.commandSizeBytes
+        }
+        else {
+            this.programCounter = returnAddress + command.offset
         }
     }
 
