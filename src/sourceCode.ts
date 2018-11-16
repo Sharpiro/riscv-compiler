@@ -15,13 +15,17 @@ export class SourceCode {
         return this._currentColumn
     }
 
-    constructor(source: string) {
-        this.source = source.replace(/\r/g, "")
-        this.source = source + "\0"
+    get peekChar(): string {
+        return this.source[this._currentIndex]
     }
 
-    peekChar(): string {
-        return this.source[this._currentIndex]
+    get hasNext(): boolean {
+        return this._currentIndex < this.source.length
+    }
+
+    constructor(source: string) {
+        this.source = source.replace(/\r/g, "")
+        this.source = this.source + "\0"
     }
 
     nextChar(): string {

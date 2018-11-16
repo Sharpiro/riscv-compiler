@@ -24,7 +24,8 @@
         "object-literal-sort-keys": false,
         "variable-name": false,
         "no-bitwise": false,
-        "no-parameter-properties": true
+        "no-parameter-properties": true,
+        "align": false
     },
     "rulesDirectory": []
 }

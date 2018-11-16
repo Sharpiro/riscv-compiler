@@ -53,7 +53,7 @@ export class RiscVCompiler {
 
             } else
                 this.labels[commandOrLabel.name] = commandOrLabel
-            let currentChar = this.sourceCode.peekChar()
+            let currentChar = this.sourceCode.peekChar
             if (currentChar === "\0") {
                 currentChar = this.sourceCode.nextChar()
                 break;
@@ -246,7 +246,7 @@ export class RiscVCompiler {
     private parseToken(): string {
         let token = ""
         while (true) {
-            const currentChar = this.sourceCode.peekChar()
+            const currentChar = this.sourceCode.peekChar
             if (currentChar === " " || currentChar === "\n" || currentChar === ","
                 || currentChar === ":") {
                 return token
@@ -257,10 +257,10 @@ export class RiscVCompiler {
 
     private parseTokenUntil(char: string): string {
         let token = ""
-        let currentChar = this.sourceCode.peekChar()
+        let currentChar = this.sourceCode.peekChar
         while (currentChar !== char) {
             token += this.sourceCode.nextChar()
-            currentChar = this.sourceCode.peekChar()
+            currentChar = this.sourceCode.peekChar
         }
         return token
     }
