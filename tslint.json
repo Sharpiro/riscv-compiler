@@ -25,7 +25,8 @@
         "variable-name": false,
         "no-bitwise": false,
         "no-parameter-properties": true,
-        "align": false
+        "align": false,
+        "ordered-imports": false
     },
     "rulesDirectory": []
 }

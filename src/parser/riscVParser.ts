@@ -1,30 +1,12 @@
 import {
     AddCommand, AddImmediateCommand, Command, JumpAndLinkCommand,
     JumpAndLinkRegisterCommand, MemoryCommand, MemoryCommandType
-} from "./addCommandSyntax";
+} from "../addCommandSyntax";
 import { SourceCode } from "./sourceCode";
+import { Compilation } from "../syntax/compilation";
+import { Label } from "../syntax/label";
 
-export class Compilation {
-    readonly commands: Command[]
-    readonly labels: { [key: string]: Label }
-
-    constructor(commands: Command[], labels: { [key: string]: Label }) {
-        this.commands = commands
-        this.labels = labels
-    }
-}
-
-export class Label {
-    readonly name: string
-    readonly address: number
-
-    constructor(name: string, address: number) {
-        this.name = name
-        this.address = address
-    }
-}
-
-export class RiscVCompiler {
+export class RiscVParser {
     private readonly commandSizeBytes = 4
     private readonly labels: { [label: string]: Label } = {}
     private readonly sourceCode: SourceCode

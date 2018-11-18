@@ -3,8 +3,8 @@ import {
     AddCommand, AddImmediateCommand, Command,
     JumpAndLinkCommand, JumpAndLinkRegisterCommand, MemoryCommand
 } from "./addCommandSyntax";
+import { Compilation } from "./syntax/compilation";
 import { Registers } from "./registers";
-import { Compilation } from "./riscVCompiler";
 
 export class Execution {
     registers: Registers

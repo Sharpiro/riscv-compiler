@@ -1,9 +1,9 @@
-    func:   
+func():
     addi x2, x2, -16
     addi x5, x5, 10
     addi x2, x2, 16
     jr x1
-main:
+main():
     addi x2, x2, -16
     sd x1, 8(x2)
     addi x5, x0, 1

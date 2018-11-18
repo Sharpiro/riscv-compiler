@@ -1,80 +1,7 @@
 import { SourceCode } from "./sourceCode";
-
-export class TriviaList {
-    trivia: Trivia[]
-    fullSpan: TextSpan
-
-    constructor(trivia: Trivia[]) {
-        this.trivia = trivia
-
-        const startingTrivia = trivia[0]
-        const startingTriviaIndex = startingTrivia ? startingTrivia.fullSpan.start : 0
-        const endingTrivia = trivia[trivia.length - 1]
-        const endingTriviaIndex = endingTrivia ? endingTrivia.fullSpan.end : 0
-        this.fullSpan = new TextSpan(startingTriviaIndex, endingTriviaIndex)
-    }
-}
-
-export class Token {
-    span: TextSpan
-    fullSpan: TextSpan
-    leadingTrivia: TriviaList
-    trailingTrivia: TriviaList
-    kind: TokenKind
-    sourceCode: SourceCode
-
-    get value(): string {
-        return this.sourceCode.getSegment(this.span.start, this.span.end)
-    }
-
-    constructor(span: TextSpan, kind: TokenKind, sourceCode: SourceCode)
-    constructor(span: TextSpan, kind: TokenKind, sourceCode: SourceCode, leadingTrivia: Trivia[],
-        trailingTrivia: Trivia[])
-    constructor(span: TextSpan, kind: TokenKind, sourceCode: SourceCode, leadingTrivia: Trivia[] = [],
-        trailingTrivia: Trivia[] = []) {
-        this.span = span
-        this.leadingTrivia = new TriviaList(leadingTrivia)
-        this.trailingTrivia = new TriviaList(trailingTrivia)
-        this.kind = kind
-        this.sourceCode = sourceCode
-
-        const leadingIndex = Math.min(this.span.start, this.leadingTrivia.fullSpan.start)
-        const trailingIndex = Math.min(this.span.end, this.trailingTrivia.fullSpan.end)
-        this.fullSpan = new TextSpan(leadingIndex, trailingIndex)
-    }
-}
-
-export class Trivia {
-    readonly fullSpan: TextSpan
-    readonly sourceCode: SourceCode
-    readonly kind: string
-
-    get value(): string {
-        return this.sourceCode.getSegment(this.fullSpan.start, this.fullSpan.end)
-    }
-
-    constructor(fullspan: TextSpan, sourceCode: SourceCode, kind: "whitespaceTrivia" | "endOfLineTrivia") {
-        this.fullSpan = fullspan
-        this.sourceCode = sourceCode
-        this.kind = kind
-    }
-}
-
-export class TextSpan {
-    start: number
-    end: number
-
-    constructor()
-    constructor(start: number, end: number)
-    constructor(start = 0, end = 0) {
-        this.start = start
-        this.end = end
-    }
-
-    get length(): number {
-        return this.end - this.start
-    }
-}
+import { TextSpan } from "./textSpan";
+import { Token, TokenKind } from "../syntax/token";
+import { Trivia } from "../syntax/trivia";
 
 export class LexicalAnalyzer {
     private readonly sourceCode: SourceCode
@@ -85,21 +12,22 @@ export class LexicalAnalyzer {
         this.sourceCode = sourceCode
     }
 
-    analyze(): void {
-        // while (this.sourceCode.hasNext) {
+    analyze(): Token[] {
         const tokens = [] as Token[]
-        for (let i = 0; i < 2; i++) {
-            const token = this.analyzeToken()
+        while (this.sourceCode.hasNext) {
+            const token = this.analyzeTokenAndTrivia()
             tokens.push(token)
         }
+        return tokens
     }
 
-    private analyzeToken(): Token {
+    private analyzeTokenAndTrivia(): Token {
         const leadingTrivia = this.analyzeTrivia()
-        const token = this.parseToken()
+        let token = this.analyzeToken()
         const trailingTrivia = this.analyzeTrivia()
-        token.leadingTrivia = leadingTrivia
-        token.trailingTrivia = trailingTrivia
+        token = token
+            .withLeadingTrivia(leadingTrivia)
+            .withTrailingTrivia(trailingTrivia)
         return token
     }
 
@@ -138,7 +66,7 @@ export class LexicalAnalyzer {
         return new Trivia(span, this.sourceCode, "endOfLineTrivia")
     }
 
-    private parseToken(): Token {
+    private analyzeToken(): Token {
         const peekChar = this.sourceCode.peekChar
 
         let span: TextSpan
@@ -147,6 +75,31 @@ export class LexicalAnalyzer {
             case ":":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
                 tokenKind = TokenKind.SemicolonToken
+                this.sourceCode.nextChar()
+                break
+            case ",":
+                span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
+                tokenKind = TokenKind.Comma
+                this.sourceCode.nextChar()
+                break
+            case "-":
+                span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
+                tokenKind = TokenKind.UnaryOperator
+                this.sourceCode.nextChar()
+                break
+            case "(":
+                span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
+                tokenKind = TokenKind.LeftParen
+                this.sourceCode.nextChar()
+                break
+            case ")":
+                span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
+                tokenKind = TokenKind.RightParen
+                this.sourceCode.nextChar()
+                break
+            case "\0":
+                span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
+                tokenKind = TokenKind.EndOfFile
                 this.sourceCode.nextChar()
                 break
             default:
@@ -163,20 +116,17 @@ export class LexicalAnalyzer {
     }
 
     private parseIdentifier(): TextSpan | null {
-        const lowLimit = "a".charCodeAt(0)
-        const highLimit = "z".charCodeAt(0)
-
         let peekChar = this.sourceCode.peekChar
         let peekCharCode = peekChar.charCodeAt(0)
 
-        if (peekCharCode < lowLimit || peekCharCode > highLimit) return null
+        if (!isCharacterInRange(peekCharCode)) return null
 
         let currentChar = peekChar
         let currentCharCode = peekCharCode
 
         const startIndex = this.sourceCode.currentIndex
         let endIndex = startIndex
-        while (peekCharCode >= lowLimit && peekCharCode <= highLimit) {
+        while (isCharacterInRange(peekCharCode)) {
             currentChar = this.sourceCode.nextChar()
             currentCharCode = currentChar.charCodeAt(0)
             peekChar = this.sourceCode.peekChar
@@ -186,11 +136,18 @@ export class LexicalAnalyzer {
 
         const span = new TextSpan(startIndex, endIndex)
         return span
-        // return new Token(span, TokenKind.Identifier)
-    }
-}
 
-export enum TokenKind {
-    Identifier,
-    SemicolonToken
+        function isCharacterInRange(characterCode: number): boolean {
+            const lowLetterLimit = "a".charCodeAt(0)
+            const highLetterLimit = "z".charCodeAt(0)
+
+            const lowNumberLimit = "0".charCodeAt(0)
+            const highNumberLimit = "9".charCodeAt(0)
+
+            if (characterCode >= lowNumberLimit && characterCode <= highNumberLimit) return true
+            if (characterCode >= lowLetterLimit && characterCode <= highLetterLimit) return true
+
+            return false
+        }
+    }
 }
