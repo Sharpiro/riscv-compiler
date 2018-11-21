@@ -2,6 +2,7 @@ import { SourceCode } from "./sourceCode";
 import { TextSpan } from "./textSpan";
 import { Token, TokenKind } from "../syntax/token";
 import { Trivia } from "../syntax/trivia";
+import { SyntaxTokens } from "../syntax/syntaxTokens";
 
 export class LexicalAnalyzer {
     private readonly sourceCode: SourceCode
@@ -12,13 +13,13 @@ export class LexicalAnalyzer {
         this.sourceCode = sourceCode
     }
 
-    analyze(): Token[] {
+    analyze(): SyntaxTokens {
         const tokens = [] as Token[]
         while (this.sourceCode.hasNext) {
             const token = this.analyzeTokenAndTrivia()
             tokens.push(token)
         }
-        return tokens
+        return new SyntaxTokens(tokens)
     }
 
     private analyzeTokenAndTrivia(): Token {
@@ -103,30 +104,34 @@ export class LexicalAnalyzer {
                 this.sourceCode.nextChar()
                 break
             default:
-                const identifierSpan = this.parseIdentifier()
-                if (identifierSpan === null) {
+                let parsedSpan = this.parseSpan(this.isValidNumericConstant)
+                tokenKind = TokenKind.NumericConstant
+                if (parsedSpan === null) {
+                    parsedSpan = this.parseSpan(this.isValidIdentifier)
+                    tokenKind = TokenKind.Identifier
+                }
+                if (parsedSpan === null) {
                     throw new Error(`invalid character '${peekChar}' while parsing token`)
                 }
-                span = identifierSpan
-                tokenKind = TokenKind.Identifier
+                span = parsedSpan
         }
 
         const token = new Token(span, tokenKind, this.sourceCode)
         return token
     }
 
-    private parseIdentifier(): TextSpan | null {
+    private parseSpan(validCharacterFunction: (charChode: number) => boolean): TextSpan | null {
         let peekChar = this.sourceCode.peekChar
         let peekCharCode = peekChar.charCodeAt(0)
 
-        if (!isCharacterInRange(peekCharCode)) return null
+        if (!validCharacterFunction(peekCharCode)) return null
 
         let currentChar = peekChar
         let currentCharCode = peekCharCode
 
         const startIndex = this.sourceCode.currentIndex
         let endIndex = startIndex
-        while (isCharacterInRange(peekCharCode)) {
+        while (validCharacterFunction(peekCharCode)) {
             currentChar = this.sourceCode.nextChar()
             currentCharCode = currentChar.charCodeAt(0)
             peekChar = this.sourceCode.peekChar
@@ -136,18 +141,26 @@ export class LexicalAnalyzer {
 
         const span = new TextSpan(startIndex, endIndex)
         return span
+    }
 
-        function isCharacterInRange(characterCode: number): boolean {
-            const lowLetterLimit = "a".charCodeAt(0)
-            const highLetterLimit = "z".charCodeAt(0)
+    private isValidIdentifier(characterCode: number): boolean {
+        const lowLetterLimit = "a".charCodeAt(0)
+        const highLetterLimit = "z".charCodeAt(0)
 
-            const lowNumberLimit = "0".charCodeAt(0)
-            const highNumberLimit = "9".charCodeAt(0)
+        const lowNumberLimit = "0".charCodeAt(0)
+        const highNumberLimit = "9".charCodeAt(0)
 
-            if (characterCode >= lowNumberLimit && characterCode <= highNumberLimit) return true
-            if (characterCode >= lowLetterLimit && characterCode <= highLetterLimit) return true
+        if (characterCode >= lowNumberLimit && characterCode <= highNumberLimit) return true
+        if (characterCode >= lowLetterLimit && characterCode <= highLetterLimit) return true
 
-            return false
-        }
+        return false
+    }
+
+    private isValidNumericConstant(characterCode: number): boolean {
+        const lowNumberLimit = "0".charCodeAt(0)
+        const highNumberLimit = "9".charCodeAt(0)
+
+        return characterCode >= lowNumberLimit &&
+            characterCode <= highNumberLimit
     }
 }

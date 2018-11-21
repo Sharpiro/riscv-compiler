@@ -10,7 +10,8 @@ export enum TokenKind {
     UnaryOperator,
     LeftParen,
     RightParen,
-    EndOfFile
+    EndOfFile,
+    NumericConstant
 }
 
 export class Token {
