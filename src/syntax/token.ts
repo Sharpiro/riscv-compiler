@@ -7,7 +7,7 @@ export enum TokenKind {
     Identifier,
     SemicolonToken,
     Comma,
-    UnaryOperator,
+    MinusToken,
     LeftParen,
     RightParen,
     EndOfFile,
@@ -22,11 +22,21 @@ export class Token {
     kind: TokenKind
     sourceCode: SourceCode
 
-    get value(): string {
+    get value(): any {
+        switch (this.kind) {
+            case TokenKind.NumericConstant:
+                return +this.valueText
+            default:
+                return this.valueText
+            // throw new Error(`Invalid kind '${this.kind}' found when converting token value`);
+        }
+    }
+
+    get valueText(): string {
         return this.sourceCode.getSegment(this.span.start, this.span.end)
     }
 
-    get valueFull(): string {
+    get valueTextFull(): string {
         return this.sourceCode.getSegment(this.fullSpan.start, this.fullSpan.end)
     }
 

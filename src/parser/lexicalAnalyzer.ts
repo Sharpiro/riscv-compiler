@@ -85,7 +85,7 @@ export class LexicalAnalyzer {
                 break
             case "-":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.UnaryOperator
+                tokenKind = TokenKind.MinusToken
                 this.sourceCode.nextChar()
                 break
             case "(":

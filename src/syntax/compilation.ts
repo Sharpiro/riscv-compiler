@@ -1,4 +1,4 @@
-import { Command } from "../addCommandSyntax";
+import { Command } from "./addCommandSyntax";
 import { Label } from "./label";
 export class Compilation {
     readonly commands: Command[];

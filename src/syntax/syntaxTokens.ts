@@ -9,6 +9,10 @@ export class SyntaxTokens {
         this.syntaxTokens = syntaxTokens
     }
 
+    get hasNext(): boolean {
+        return this.currentIndex < this.syntaxTokens.length
+    }
+
     get peekToken(): Token {
         return this.syntaxTokens[this.currentIndex]
     }

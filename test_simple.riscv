@@ -1,1 +1,2 @@
-    addi x2, x2, -16
+addi x2, x2, -16
+add x5, x3, x4
