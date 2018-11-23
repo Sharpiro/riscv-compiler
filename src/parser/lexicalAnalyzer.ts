@@ -1,6 +1,6 @@
 import { SourceCode } from "./sourceCode";
 import { TextSpan } from "./textSpan";
-import { Token, TokenKind } from "../syntax/token";
+import { Token, SyntaxKind } from "../syntax/token";
 import { Trivia } from "../syntax/trivia";
 import { SyntaxTokens } from "../syntax/syntaxTokens";
 
@@ -71,44 +71,44 @@ export class LexicalAnalyzer {
         const peekChar = this.sourceCode.peekChar
 
         let span: TextSpan
-        let tokenKind: TokenKind
+        let tokenKind: SyntaxKind
         switch (peekChar) {
             case ":":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.SemicolonToken
+                tokenKind = SyntaxKind.SemicolonToken
                 this.sourceCode.nextChar()
                 break
             case ",":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.Comma
+                tokenKind = SyntaxKind.Comma
                 this.sourceCode.nextChar()
                 break
             case "-":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.MinusToken
+                tokenKind = SyntaxKind.MinusToken
                 this.sourceCode.nextChar()
                 break
             case "(":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.LeftParen
+                tokenKind = SyntaxKind.OpenParen
                 this.sourceCode.nextChar()
                 break
             case ")":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.RightParen
+                tokenKind = SyntaxKind.CloseParen
                 this.sourceCode.nextChar()
                 break
             case "\0":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = TokenKind.EndOfFile
+                tokenKind = SyntaxKind.EndOfFile
                 this.sourceCode.nextChar()
                 break
             default:
                 let parsedSpan = this.parseSpan(this.isValidNumericConstant)
-                tokenKind = TokenKind.NumericConstant
+                tokenKind = SyntaxKind.NumericLiteral
                 if (parsedSpan === null) {
                     parsedSpan = this.parseSpan(this.isValidIdentifier)
-                    tokenKind = TokenKind.Identifier
+                    tokenKind = SyntaxKind.Identifier
                 }
                 if (parsedSpan === null) {
                     throw new Error(`invalid character '${peekChar}' while parsing token`)

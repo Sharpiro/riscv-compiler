@@ -3,15 +3,21 @@ import { TextSpan } from "../parser/textSpan";
 import { Trivia } from "./trivia";
 import { TriviaList } from "./triviaList";
 
-export enum TokenKind {
+export enum SyntaxKind {
     Identifier,
     SemicolonToken,
     Comma,
     MinusToken,
-    LeftParen,
-    RightParen,
+    OpenParen,
+    CloseParen,
     EndOfFile,
-    NumericConstant
+    NumericLiteral,
+    UnaryMinusExpression,
+    AddCommand,
+    AddImmediateCommand,
+    StoreCommand,
+    LoadCommand,
+    JumpAndLinkRegisterCommand
 }
 
 export class Token {
@@ -19,12 +25,12 @@ export class Token {
     fullSpan = new TextSpan()
     leadingTrivia = new TriviaList()
     trailingTrivia = new TriviaList()
-    kind: TokenKind
+    kind: SyntaxKind
     sourceCode: SourceCode
 
     get value(): any {
         switch (this.kind) {
-            case TokenKind.NumericConstant:
+            case SyntaxKind.NumericLiteral:
                 return +this.valueText
             default:
                 return this.valueText
@@ -41,13 +47,13 @@ export class Token {
     }
 
     get kindText(): string {
-        return TokenKind[this.kind]
+        return SyntaxKind[this.kind]
     }
 
-    constructor(span: TextSpan, kind: TokenKind, sourceCode: SourceCode)
-    constructor(span: TextSpan, kind: TokenKind, sourceCode: SourceCode,
+    constructor(span: TextSpan, kind: SyntaxKind, sourceCode: SourceCode)
+    constructor(span: TextSpan, kind: SyntaxKind, sourceCode: SourceCode,
         leadingTrivia: Trivia[], trailingTrivia: Trivia[])
-    constructor(span: TextSpan, kind: TokenKind, sourceCode: SourceCode,
+    constructor(span: TextSpan, kind: SyntaxKind, sourceCode: SourceCode,
         leadingTrivia: Trivia[] = [], trailingTrivia: Trivia[] = []) {
         this.span = span
         this.kind = kind
