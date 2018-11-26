@@ -5,19 +5,25 @@ import { TriviaList } from "./triviaList";
 
 export enum SyntaxKind {
     Identifier,
-    SemicolonToken,
     Comma,
     MinusToken,
     OpenParen,
     CloseParen,
     EndOfFile,
-    NumericLiteral,
+    NumericLiteralToken,
     UnaryMinusExpression,
     AddCommand,
     AddImmediateCommand,
-    StoreCommand,
-    LoadCommand,
-    JumpAndLinkRegisterCommand
+    JumpRegisterPseudoCommand,
+    CallPseudoCommand,
+    NumericLiteralExpression,
+    ColonToken,
+    StoreByte,
+    LoadWord,
+    StoreDoubleWord,
+    LoadDoubleWord,
+    StoreWord,
+    LoadByte
 }
 
 export class Token {
@@ -30,7 +36,11 @@ export class Token {
 
     get value(): any {
         switch (this.kind) {
-            case SyntaxKind.NumericLiteral:
+            case SyntaxKind.NumericLiteralToken:
+                const numericValue = +this.valueText
+                if (isNaN(numericValue)) {
+                    throw new Error(`Error converting '${this.valueText}' to numeric literal`)
+                }
                 return +this.valueText
             default:
                 return this.valueText

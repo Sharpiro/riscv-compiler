@@ -4,15 +4,16 @@ import { RiscVParser } from "./parser/riscVParser";
 import { SourceCode } from "./parser/sourceCode";
 import { Runner } from "./runner";
 
-const source = fs.readFileSync("C:/gitbase/Tools/riscv/test_simple.riscv").toString()
+const source = fs.readFileSync("C:/gitbase/Tools/riscv/test.riscv").toString()
 const sourceCode = new SourceCode(source)
 const lexicalAnalyzer = new LexicalAnalyzer(sourceCode)
 const syntaxTokens = lexicalAnalyzer.analyze()
 const riscVCompiler = new RiscVParser(syntaxTokens)
-const compilation = riscVCompiler.compile()
+const compilation = riscVCompiler.parse()
 const runner = new Runner(compilation)
-// const execution = runner.run()
+const execution = runner.run()
 
-// // console.log(commands)
+console.log(compilation)
+console.log(execution)
 // console.log(execution.registers.registers.slice(0, 10))
 // console.log(execution.memory)

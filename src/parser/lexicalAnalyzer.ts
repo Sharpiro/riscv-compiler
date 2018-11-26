@@ -75,7 +75,7 @@ export class LexicalAnalyzer {
         switch (peekChar) {
             case ":":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = SyntaxKind.SemicolonToken
+                tokenKind = SyntaxKind.ColonToken
                 this.sourceCode.nextChar()
                 break
             case ",":
@@ -105,7 +105,7 @@ export class LexicalAnalyzer {
                 break
             default:
                 let parsedSpan = this.parseSpan(this.isValidNumericConstant)
-                tokenKind = SyntaxKind.NumericLiteral
+                tokenKind = SyntaxKind.NumericLiteralToken
                 if (parsedSpan === null) {
                     parsedSpan = this.parseSpan(this.isValidIdentifier)
                     tokenKind = SyntaxKind.Identifier

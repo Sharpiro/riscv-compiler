@@ -14,7 +14,6 @@ export class SyntaxNode {
 
 export abstract class Command extends SyntaxNode {
     nameToken: Token
-    address = 0
 
     constructor(name: Token, kind: SyntaxKind) {
         super(kind);
@@ -76,6 +75,15 @@ export class Expression extends SyntaxNode {
     }
 }
 
+export class NumericLiteralExpression extends Expression {
+    numericLiteral: Token
+
+    constructor(numericLiteral: Token) {
+        super(SyntaxKind.NumericLiteralExpression);
+        this.numericLiteral = numericLiteral
+    }
+}
+
 export class PrefixUnaryExpression extends Expression {
     operatorToken: Token
     operand: Token
@@ -107,23 +115,23 @@ export class MemoryCommand extends DoubleParameterCommand {
     }
 }
 
-// export class JumpAndLinkRegisterCommand extends Command {
-//     // unknownRegisterToken: Token
-//     returnRegisterToken: Token
-//     offsetToken: Token
+export class JumpRegisterPseudoCommand extends Command {
+    returnRegisterToken: Token
 
-//     constructor(nameToken: Token, commaToken: Token,
-//         dataRegisterToken: Token, memoryOffsetToken: Token,
-//         memoryRegisterToken: Token, openParenToken: Token,
-//         closeParenToken: Token) {
-//         super(nameToken, SyntaxKind.JumpAndLinkRegisterCommand, commaToken);
-//         this.dataRegisterToken = dataRegisterToken
-//         this.memoryOffsetToken = memoryOffsetToken
-//         this.memoryRegisterToken = memoryRegisterToken
-//         this.openParenToken = openParenToken
-//         this.closeParenToken = closeParenToken
-//     }
-// }
+    constructor(nameToken: Token, returnRegisterToken: Token) {
+        super(nameToken, SyntaxKind.JumpRegisterPseudoCommand);
+        this.returnRegisterToken = returnRegisterToken
+    }
+}
+
+export class CallPseudoCommand extends Command {
+    functionName: Token
+
+    constructor(nameToken: Token, functionName: Token) {
+        super(nameToken, SyntaxKind.CallPseudoCommand);
+        this.functionName = functionName
+    }
+}
 
 // export class JumpAndLinkCommand extends Command {
 //     returnRegister = 0

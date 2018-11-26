@@ -1,5 +1,6 @@
 import {
-    AddCommand, Command, AddImmediateCommand, Expression, MemoryCommand, PrefixUnaryExpression
+    AddCommand, Command, AddImmediateCommand, Expression, MemoryCommand,
+    PrefixUnaryExpression, JumpRegisterPseudoCommand, CallPseudoCommand, NumericLiteralExpression
 } from "../syntax/addCommandSyntax";
 import { Compilation } from "../syntax/compilation";
 import { Label } from "../syntax/label";
@@ -7,7 +8,7 @@ import { SyntaxKind, Token } from "../syntax/token";
 import { SyntaxTokens } from "../syntax/syntaxTokens";
 
 export class RiscVParser {
-    private readonly commandSizeBytes = 4
+    private readonly commandSizeBytes = 1
     private readonly labels: { [label: string]: Label } = {}
     private readonly syntaxTokens: SyntaxTokens
     private currentAddress = 0
@@ -25,13 +26,14 @@ export class RiscVParser {
         this.syntaxTokens = syntaxTokens
     }
 
-    compile(): Compilation {
+    parse(): Compilation {
         const commands: Command[] = []
         while (this.syntaxTokens.hasNext) {
             const commandOrLabel = this.parseCommandOrLabel()
 
             if (commandOrLabel instanceof Command) {
-                commands[commandOrLabel.address] = commandOrLabel
+                commands[this.currentAddress] = commandOrLabel
+                this.currentAddress += this.commandSizeBytes
 
             } else {
                 this.labels[commandOrLabel.nameToken.value] = commandOrLabel
@@ -44,25 +46,23 @@ export class RiscVParser {
         }
 
         // todo remove this hax
-        const temp: any = undefined
-        commands.push(temp)
-        commands.push(temp)
-        commands.push(temp)
+        // const temp: any = undefined
+        // commands.push(temp)
+        // commands.push(temp)
+        // commands.push(temp)
         return new Compilation(commands, this.labels)
     }
 
     private parseCommandOrLabel(): Command | Label {
-        // const commandNameOrLabelName = this.parseToken()
         const identifierToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
         let commandOrLabel: Command | Label
-        const isCommand = this.commandNames[identifierToken.valueText]
+        const isCommand = !!this.commandNames[identifierToken.valueText]
         if (isCommand) {
             commandOrLabel = this.parseCommand(identifierToken)
         } else {
-            commandOrLabel = new Label(identifierToken, this.currentAddress)
+            commandOrLabel = this.parseLabel(identifierToken)
         }
 
-        // const currentChar = this.sourceCode.nextChar()
         return commandOrLabel
     }
 
@@ -76,34 +76,48 @@ export class RiscVParser {
                 command = this.parseAddImmediateCommand(nameToken)
                 break;
             case "sb":
+                command = this.parseMemoryCommand(nameToken, SyntaxKind.StoreByte)
+                break
             case "sw":
+                command = this.parseMemoryCommand(nameToken, SyntaxKind.StoreWord)
+                break
             case "sd":
-                command = this.parseMemoryCommand(nameToken, SyntaxKind.StoreCommand)
+                command = this.parseMemoryCommand(nameToken, SyntaxKind.StoreDoubleWord)
+                break;
+            case "lb":
+                command = this.parseMemoryCommand(nameToken, SyntaxKind.LoadByte)
                 break;
             case "lw":
-            case "ld":
-                command = this.parseMemoryCommand(nameToken, SyntaxKind.LoadCommand)
+                command = this.parseMemoryCommand(nameToken, SyntaxKind.LoadWord)
                 break;
-            // case "jr":
-            //     command = this.parseJumpRegisterPseudoCommand(nameToken)
-            //     break;
-            // case "jal":
-            //     command = this.parseJumpRegisterPseudoCommand(nameToken)
-            //     break;
-            // case "ret":
-            //     command = this.parseReturnPseudoCommand(nameToken)
-            //     break;
-            // case "call":
-            //     command = this.parseCallCommand(nameToken)
-            //     break;
+            case "ld":
+                command = this.parseMemoryCommand(nameToken, SyntaxKind.LoadDoubleWord)
+                break;
+            case "jr":
+                command = this.parseJumpRegisterPseudoCommand(nameToken)
+                break;
+            case "call":
+                command = this.parseCallPseudoCommand(nameToken)
+                break;
             default:
-                throw new Error(`invalid command '${nameToken}'`)
+                throw new Error(`invalid command '${nameToken.valueText}'`)
         }
-        const address = this.currentAddress
-        command.address = address
-        this.currentAddress += this.commandSizeBytes
 
         return command
+    }
+
+    private parseLabel(name: Token): Label {
+        const openParen = this.syntaxTokens.eatToken(SyntaxKind.OpenParen)
+        const closeParen = this.syntaxTokens.eatToken(SyntaxKind.CloseParen)
+        const colon = this.syntaxTokens.eatToken(SyntaxKind.ColonToken)
+
+        return new Label(
+            name,
+            openParen,
+            closeParen,
+            colon,
+            this.currentAddress
+        )
     }
 
     private parseAddCommand(nameToken: Token): AddCommand {
@@ -143,6 +157,9 @@ export class RiscVParser {
     private parseExpression(): Expression {
         let expression: Expression
         switch (this.syntaxTokens.peekToken.kind) {
+            case SyntaxKind.NumericLiteralToken:
+                expression = this.parseNumericLiteralExpression()
+                break;
             case SyntaxKind.MinusToken:
                 expression = this.parsePrefixUnaryExpression()
                 break;
@@ -150,6 +167,12 @@ export class RiscVParser {
                 throw new Error("Invalid expression")
         }
         return expression
+    }
+
+    private parseNumericLiteralExpression(): NumericLiteralExpression {
+        const numericLiteralToken = this.syntaxTokens.eatToken(SyntaxKind.NumericLiteralToken)
+
+        return new NumericLiteralExpression(numericLiteralToken)
     }
 
     private parsePrefixUnaryExpression(): PrefixUnaryExpression {
@@ -162,7 +185,7 @@ export class RiscVParser {
             default:
                 throw new Error(`invalid prefix unary operator '${operatorToken.value}'`)
         }
-        const operand = this.syntaxTokens.eatToken(SyntaxKind.NumericLiteral);
+        const operand = this.syntaxTokens.eatToken(SyntaxKind.NumericLiteralToken);
 
         return new PrefixUnaryExpression(
             operatorKind,
@@ -174,7 +197,7 @@ export class RiscVParser {
     private parseMemoryCommand(nameToken: Token, kind: SyntaxKind): MemoryCommand {
         const dataRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
         const commaToken = this.syntaxTokens.eatToken(SyntaxKind.Comma)
-        const memoryOffsetToken = this.syntaxTokens.eatToken(SyntaxKind.NumericLiteral)
+        const memoryOffsetToken = this.syntaxTokens.eatToken(SyntaxKind.NumericLiteralToken)
         const openParenToken = this.syntaxTokens.eatToken(SyntaxKind.OpenParen)
         const memoryRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
         const closeParenToken = this.syntaxTokens.eatToken(SyntaxKind.CloseParen)
@@ -191,45 +214,19 @@ export class RiscVParser {
         )
     }
 
-    // private parseJumpRegisterPseudoCommand(nameToken: Token): JumpAndLinkRegisterCommand {
-    //     const returnRegister = this.parseRegister()
-    //     return new JumpAndLinkRegisterCommand({
-    //         nameToken: commandName,
-    //         returnRegister
-    //     })
-    // }
+    private parseJumpRegisterPseudoCommand(nameToken: Token): JumpRegisterPseudoCommand {
+        const returnRegister = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
+        return new JumpRegisterPseudoCommand(
+            nameToken,
+            returnRegister
+        )
+    }
 
-    // private parseReturnPseudoCommand(commandName: string): JumpAndLinkRegisterCommand {
-    //     return new JumpAndLinkRegisterCommand({
-    //         nameToken: commandName,
-    //         returnRegister: 1
-    //     })
-    // }
-
-    // private parseCallCommand(commandName: string): JumpAndLinkCommand {
-    //     const labelName = this.parseToken()
-    //     const label = this.labels[labelName]
-    //     if (!label) {
-    //         throw new Error(`Could not find label with name '${labelName}'`)
-    //     }
-    //     return new JumpAndLinkCommand({
-    //         nameToken: commandName,
-    //         returnRegister: 1,
-    //         procedureAddress: label.address
-    //     })
-    // }
-
-    // private parseRegister(): number {
-    //     const registerToken = this.parseToken()
-    //     if (!registerToken.startsWith("x")) {
-    //         throw new Error(`Expected register starting with 'x', but instead was '${registerToken}'`)
-    //     }
-    //     return this.parseRegisterFromString(registerToken)
-    // }
-
-    private parseRegisterFromString(registerToken: string): number {
-        const numberSlice = registerToken.slice(1)
-        const registerNumber = +numberSlice
-        return registerNumber
+    private parseCallPseudoCommand(nameToken: Token): CallPseudoCommand {
+        const functionName = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
+        return new CallPseudoCommand(
+            nameToken,
+            functionName,
+        )
     }
 }

@@ -11,7 +11,11 @@ export class Registers {
         if (index < 0 || index > 31) {
             throw new Error(`invalid register index '${index}', must be 0 <= x <= 31`)
         }
-        return this._registers[index]
+        const value = this._registers[index]
+        if (value === undefined) {
+            throw new Error(`An error occurred retrieving register number'${index}'`)
+        }
+        return value
     }
 
     set(index: number, value: number): void {

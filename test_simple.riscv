@@ -1,2 +1,3 @@
-addi x2, x3, -16
-
+main():
+    addi x2, x2, -16
+    sd x1, 8(x2)
