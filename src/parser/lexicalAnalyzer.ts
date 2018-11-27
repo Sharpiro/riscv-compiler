@@ -7,6 +7,7 @@ import { SyntaxTokens } from "../syntax/syntaxTokens";
 export class LexicalAnalyzer {
     private readonly sourceCode: SourceCode
     private readonly whitespace = " "
+    private readonly forwardSlash = "/"
     private readonly endOfLineTrivia = "\n"
 
     constructor(sourceCode: SourceCode) {
@@ -34,6 +35,7 @@ export class LexicalAnalyzer {
 
     private analyzeTrivia(): Trivia[] {
         const trivia = [] as Trivia[]
+        const commentTrivia = this.analyzeCommentTrivia()
         const whitespaceTrivia = this.analyzeWhitespaceTrivia()
         const endOfLineTrivia = this.analyzeNewLineTrivia()
 
@@ -65,6 +67,23 @@ export class LexicalAnalyzer {
         const span = new TextSpan(startIndex, startIndex + 1)
         this.sourceCode.nextChar()
         return new Trivia(span, this.sourceCode, "endOfLineTrivia")
+    }
+
+    private analyzeCommentTrivia(): Trivia | null {
+        if (this.sourceCode.peekChar !== this.forwardSlash) return null
+        if (this.sourceCode.peekCharMulti(2) !== this.forwardSlash) return null
+
+        const startIndex = this.sourceCode.currentIndex
+        const endIndex = startIndex
+
+        this.sourceCode.nextChar(2)
+        // while (this.sourceCode.peekChar !== this.endOfLineTrivia) {
+        //     this.sourceCode.nextChar()
+        //     endIndex++
+        // }
+
+        const span = new TextSpan(startIndex, endIndex)
+        return new Trivia(span, this.sourceCode, "whitespaceTrivia")
     }
 
     private analyzeToken(): Token {

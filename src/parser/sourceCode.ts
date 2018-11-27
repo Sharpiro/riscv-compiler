@@ -28,7 +28,11 @@ export class SourceCode {
         this.source = this.source + "\0"
     }
 
-    nextChar(): string {
+    peekCharMulti(lookAhead = 1): string {
+        return this.source[this._currentIndex + lookAhead - 1]
+    }
+
+    nextChar(nextAmount = 1): string {
         const nextChar = this.source[this._currentIndex]
         if (nextChar === "\n") {
             this._currentLine++
@@ -36,7 +40,7 @@ export class SourceCode {
         } else {
             this._currentColumn++
         }
-        this._currentIndex++
+        this._currentIndex += nextAmount
         return nextChar
     }
 
