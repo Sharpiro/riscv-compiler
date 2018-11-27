@@ -1,0 +1,25 @@
+{
+    "name": "syntax",
+    "displayName": "syntax",
+    "description": "",
+    "version": "0.0.1",
+    "engines": {
+        "vscode": "^1.23.0"
+    },
+    "categories": [
+        "Programming Languages"
+    ],
+    "contributes": {
+        "languages": [{
+            "id": "riscv",
+            "aliases": ["riscv", "riscv"],
+            "extensions": [".riscv"],
+            "configuration": "./language-configuration.json"
+        }],
+        "grammars": [{
+            "language": "riscv",
+            "scopeName": "source.riscv",
+            "path": "./syntaxes/riscv.tmLanguage.json"
+        }]
+    }
+}
