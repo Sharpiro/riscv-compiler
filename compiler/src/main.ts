@@ -4,7 +4,7 @@ import { RiscVParser } from "./parser/riscVParser";
 import { SourceCode } from "./parser/sourceCode";
 import { Runner } from "./runner";
 
-const source = fs.readFileSync("C:/gitbase/Tools/riscv/test.riscv").toString()
+const source = fs.readFileSync("C:/gitbase/Tools/riscv/compiler/test.riscv").toString()
 const sourceCode = new SourceCode(source)
 const lexicalAnalyzer = new LexicalAnalyzer(sourceCode)
 const syntaxTokens = lexicalAnalyzer.analyze()

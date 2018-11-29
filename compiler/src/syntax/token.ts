@@ -23,7 +23,10 @@ export enum SyntaxKind {
     StoreDoubleWord,
     LoadDoubleWord,
     StoreWord,
-    LoadByte
+    LoadByte,
+    CommentTrivia,
+    WhitespaceTrivia,
+    EndOfLineTrivia
 }
 
 export class Token {

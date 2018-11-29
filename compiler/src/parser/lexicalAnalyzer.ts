@@ -35,11 +35,12 @@ export class LexicalAnalyzer {
 
     private analyzeTrivia(): Trivia[] {
         const trivia = [] as Trivia[]
-        const commentTrivia = this.analyzeCommentTrivia()
         const whitespaceTrivia = this.analyzeWhitespaceTrivia()
+        const commentTrivia = this.analyzeCommentTrivia()
         const endOfLineTrivia = this.analyzeNewLineTrivia()
 
         if (whitespaceTrivia) trivia.push(whitespaceTrivia)
+        if (commentTrivia) trivia.push(commentTrivia)
         if (endOfLineTrivia) trivia.push(endOfLineTrivia)
 
         return trivia
@@ -56,7 +57,7 @@ export class LexicalAnalyzer {
         }
 
         const span = new TextSpan(startIndex, endIndex)
-        return new Trivia(span, this.sourceCode, "whitespaceTrivia")
+        return new Trivia(span, this.sourceCode, SyntaxKind.WhitespaceTrivia)
     }
 
     private analyzeNewLineTrivia(): Trivia | null {
@@ -66,24 +67,24 @@ export class LexicalAnalyzer {
         const startIndex = this.sourceCode.currentIndex
         const span = new TextSpan(startIndex, startIndex + 1)
         this.sourceCode.nextChar()
-        return new Trivia(span, this.sourceCode, "endOfLineTrivia")
+        return new Trivia(span, this.sourceCode, SyntaxKind.EndOfLineTrivia)
     }
 
     private analyzeCommentTrivia(): Trivia | null {
-        if (this.sourceCode.peekChar !== this.forwardSlash) return null
+        if (this.sourceCode.peekCharMulti() !== this.forwardSlash) return null
         if (this.sourceCode.peekCharMulti(2) !== this.forwardSlash) return null
 
         const startIndex = this.sourceCode.currentIndex
-        const endIndex = startIndex
+        let endIndex = startIndex + 2
 
         this.sourceCode.nextChar(2)
-        // while (this.sourceCode.peekChar !== this.endOfLineTrivia) {
-        //     this.sourceCode.nextChar()
-        //     endIndex++
-        // }
+        while (this.sourceCode.peekChar !== this.endOfLineTrivia) {
+            this.sourceCode.nextChar()
+            endIndex++
+        }
 
         const span = new TextSpan(startIndex, endIndex)
-        return new Trivia(span, this.sourceCode, "whitespaceTrivia")
+        return new Trivia(span, this.sourceCode, SyntaxKind.CommentTrivia)
     }
 
     private analyzeToken(): Token {
