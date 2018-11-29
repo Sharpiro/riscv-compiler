@@ -35,13 +35,17 @@ export class LexicalAnalyzer {
 
     private analyzeTrivia(): Trivia[] {
         const trivia = [] as Trivia[]
-        const whitespaceTrivia = this.analyzeWhitespaceTrivia()
-        const commentTrivia = this.analyzeCommentTrivia()
-        const endOfLineTrivia = this.analyzeNewLineTrivia()
+        while (true) {
+            const whitespaceTrivia = this.analyzeWhitespaceTrivia()
+            const commentTrivia = this.analyzeCommentTrivia()
+            const endOfLineTrivia = this.analyzeNewLineTrivia()
 
-        if (whitespaceTrivia) trivia.push(whitespaceTrivia)
-        if (commentTrivia) trivia.push(commentTrivia)
-        if (endOfLineTrivia) trivia.push(endOfLineTrivia)
+            if (whitespaceTrivia) trivia.push(whitespaceTrivia)
+            if (commentTrivia) trivia.push(commentTrivia)
+            if (endOfLineTrivia) trivia.push(endOfLineTrivia)
+
+            if (!whitespaceTrivia && !commentTrivia && !endOfLineTrivia) break
+        }
 
         return trivia
     }

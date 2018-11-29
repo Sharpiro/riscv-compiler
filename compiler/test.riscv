@@ -1,4 +1,10 @@
-// useless comment  
+    // this
+// is 
+// a   
+    // multiline
+
+
+// comment
 func(): // inline comment
     addi x2, x2, -16
     addi x5, x5, 10
