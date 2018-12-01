@@ -6,6 +6,7 @@
 
 // comment
 func(): // inline comment
+// next comment
     addi x2, x2, -16
     addi x5, x5, 10
     addi x2, x2, 16

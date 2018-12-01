@@ -24,16 +24,16 @@ export class LexicalAnalyzer {
     }
 
     private analyzeTokenAndTrivia(): Token {
-        const leadingTrivia = this.analyzeTrivia()
+        const leadingTrivia = this.analyzeLeadingTrivia()
         let token = this.analyzeToken()
-        const trailingTrivia = this.analyzeTrivia()
+        const trailingTrivia = this.analyzeTrailingTrivia()
         token = token
             .withLeadingTrivia(leadingTrivia)
             .withTrailingTrivia(trailingTrivia)
         return token
     }
 
-    private analyzeTrivia(): Trivia[] {
+    private analyzeLeadingTrivia(): Trivia[] {
         const trivia = [] as Trivia[]
         while (true) {
             const whitespaceTrivia = this.analyzeWhitespaceTrivia()
@@ -46,6 +46,19 @@ export class LexicalAnalyzer {
 
             if (!whitespaceTrivia && !commentTrivia && !endOfLineTrivia) break
         }
+
+        return trivia
+    }
+
+    private analyzeTrailingTrivia(): Trivia[] {
+        const trivia = [] as Trivia[]
+        const whitespaceTrivia = this.analyzeWhitespaceTrivia()
+        const commentTrivia = this.analyzeCommentTrivia()
+        const endOfLineTrivia = this.analyzeNewLineTrivia()
+
+        if (whitespaceTrivia) trivia.push(whitespaceTrivia)
+        if (commentTrivia) trivia.push(commentTrivia)
+        if (endOfLineTrivia) trivia.push(endOfLineTrivia)
 
         return trivia
     }
