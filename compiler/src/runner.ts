@@ -22,14 +22,14 @@ export class Runner {
     private readonly commandSizeBytes = 1
     private readonly registers = new Registers()
     private readonly memory = Buffer.alloc(32)
-
+    private snapshots: Execution[] = []
     private programCounter = 0
 
     constructor(compilation: Compilation) {
         this.compilation = compilation
     }
 
-    run(): Execution {
+    run(): Execution[] {
         const mainFunctionLabel = this.compilation.labels.main
         if (!mainFunctionLabel) {
             throw new Error("Could not find 'main' entry point into program")
@@ -41,12 +41,18 @@ export class Runner {
             this.runCommand(currentCommand)
         }
 
-        return new Execution(this.registers, this.memory)
+        this.snapshots.push(new Execution(this.registers, this.memory))
+        return this.snapshots
     }
 
     private runCommand(command: Command): void {
         let incrementProgramCounter = true
         switch (command.nameToken.value) {
+            case "#":
+                const newBuffer = Buffer.alloc(this.memory.length)
+                this.memory.copy(newBuffer)
+                this.snapshots.push(new Execution(this.registers.copy(), newBuffer))
+                break;
             case "add":
                 this.runAddCommand(command as AddCommand)
                 break
@@ -74,7 +80,7 @@ export class Runner {
                 incrementProgramCounter = false
                 break
             default:
-                throw new Error(`invalid command '${command.nameToken}'`)
+                throw new Error(`invalid command '${command.kindText}'`)
         }
 
         if (incrementProgramCounter) {
@@ -125,7 +131,7 @@ export class Runner {
         let value: number
         switch (expression.kind) {
             case SyntaxKind.UnaryMinusExpression:
-                value = this.evaluatUnaryMinusExpression(expression)
+                value = this.evaluateUnaryMinusExpression(expression)
                 break;
             default:
                 throw new Error(`invalid prefix unary kind '${expression.kind}'`)
@@ -134,7 +140,7 @@ export class Runner {
         return value
     }
 
-    private evaluatUnaryMinusExpression(expression: PrefixUnaryExpression): number {
+    private evaluateUnaryMinusExpression(expression: PrefixUnaryExpression): number {
         return -expression.operand.value
     }
 

@@ -12,7 +12,7 @@ export class SyntaxNode {
     }
 }
 
-export abstract class Command extends SyntaxNode {
+export class Command extends SyntaxNode {
     nameToken: Token
 
     constructor(name: Token, kind: SyntaxKind) {

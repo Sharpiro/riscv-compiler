@@ -5,10 +5,10 @@ import { TriviaList } from "./triviaList";
 
 export enum SyntaxKind {
     Identifier,
-    Comma,
+    CommaToken,
     MinusToken,
-    OpenParen,
-    CloseParen,
+    OpenParenToken,
+    CloseParenToken,
     EndOfFile,
     NumericLiteralToken,
     UnaryMinusExpression,
@@ -26,7 +26,9 @@ export enum SyntaxKind {
     LoadByte,
     CommentTrivia,
     WhitespaceTrivia,
-    EndOfLineTrivia
+    EndOfLineTrivia,
+    StateToken,
+    StateCommand
 }
 
 export class Token {
@@ -52,11 +54,11 @@ export class Token {
     }
 
     get valueText(): string {
-        return this.sourceCode.getSegment(this.span.start, this.span.end)
+        return this.sourceCode.getTextSegment(this.span.start, this.span.end)
     }
 
     get valueTextFull(): string {
-        return this.sourceCode.getSegment(this.fullSpan.start, this.fullSpan.end)
+        return this.sourceCode.getTextSegment(this.fullSpan.start, this.fullSpan.end)
     }
 
     get kindText(): string {

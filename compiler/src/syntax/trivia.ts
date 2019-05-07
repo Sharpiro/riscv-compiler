@@ -12,11 +12,11 @@ export class Trivia {
     }
 
     get valueText(): string {
-        return this.sourceCode.getSegment(this.fullSpan.start, this.fullSpan.end)
+        return this.sourceCode.getTextSegment(this.fullSpan.start, this.fullSpan.end)
     }
 
-    constructor(fullspan: TextSpan, sourceCode: SourceCode, kind: SyntaxKind) {
-        this.fullSpan = fullspan
+    constructor(fullSpan: TextSpan, sourceCode: SourceCode, kind: SyntaxKind) {
+        this.fullSpan = fullSpan
         this.sourceCode = sourceCode
         this.kind = kind
     }

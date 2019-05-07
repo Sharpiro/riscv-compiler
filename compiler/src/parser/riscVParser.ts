@@ -19,7 +19,8 @@ export class RiscVParser {
         sd: true,
         ld: true,
         jr: true,
-        call: true
+        call: true,
+        "#": true
     }
 
     constructor(syntaxTokens: SyntaxTokens) {
@@ -99,6 +100,9 @@ export class RiscVParser {
             case "call":
                 command = this.parseCallPseudoCommand(nameToken)
                 break;
+            case "#":
+                command = new Command(nameToken, SyntaxKind.StateCommand) 
+                break;
             default:
                 throw new Error(`invalid command '${nameToken.valueText}'`)
         }
@@ -107,8 +111,8 @@ export class RiscVParser {
     }
 
     private parseLabel(name: Token): Label {
-        const openParen = this.syntaxTokens.eatToken(SyntaxKind.OpenParen)
-        const closeParen = this.syntaxTokens.eatToken(SyntaxKind.CloseParen)
+        const openParen = this.syntaxTokens.eatToken(SyntaxKind.OpenParenToken)
+        const closeParen = this.syntaxTokens.eatToken(SyntaxKind.CloseParenToken)
         const colon = this.syntaxTokens.eatToken(SyntaxKind.ColonToken)
 
         return new Label(
@@ -122,9 +126,9 @@ export class RiscVParser {
 
     private parseAddCommand(nameToken: Token): AddCommand {
         const destinationRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
-        const firstCommmaToken = this.syntaxTokens.eatToken(SyntaxKind.Comma)
+        const firstCommmaToken = this.syntaxTokens.eatToken(SyntaxKind.CommaToken)
         const sourceRegisterOneToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
-        const secondCommaToken = this.syntaxTokens.eatToken(SyntaxKind.Comma)
+        const secondCommaToken = this.syntaxTokens.eatToken(SyntaxKind.CommaToken)
         const sourceRegisterTwoToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
 
         return new AddCommand(
@@ -139,9 +143,9 @@ export class RiscVParser {
 
     private parseAddImmediateCommand(nameToken: Token): AddImmediateCommand {
         const destinationRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
-        const firstCommaToken = this.syntaxTokens.eatToken(SyntaxKind.Comma)
+        const firstCommaToken = this.syntaxTokens.eatToken(SyntaxKind.CommaToken)
         const sourceRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
-        const secondCommaToken = this.syntaxTokens.eatToken(SyntaxKind.Comma)
+        const secondCommaToken = this.syntaxTokens.eatToken(SyntaxKind.CommaToken)
         const expression = this.parseExpression()
 
         return new AddImmediateCommand(
@@ -196,11 +200,11 @@ export class RiscVParser {
 
     private parseMemoryCommand(nameToken: Token, kind: SyntaxKind): MemoryCommand {
         const dataRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
-        const commaToken = this.syntaxTokens.eatToken(SyntaxKind.Comma)
+        const commaToken = this.syntaxTokens.eatToken(SyntaxKind.CommaToken)
         const memoryOffsetToken = this.syntaxTokens.eatToken(SyntaxKind.NumericLiteralToken)
-        const openParenToken = this.syntaxTokens.eatToken(SyntaxKind.OpenParen)
+        const openParenToken = this.syntaxTokens.eatToken(SyntaxKind.OpenParenToken)
         const memoryRegisterToken = this.syntaxTokens.eatToken(SyntaxKind.Identifier)
-        const closeParenToken = this.syntaxTokens.eatToken(SyntaxKind.CloseParen)
+        const closeParenToken = this.syntaxTokens.eatToken(SyntaxKind.CloseParenToken)
 
         return new MemoryCommand(
             nameToken,

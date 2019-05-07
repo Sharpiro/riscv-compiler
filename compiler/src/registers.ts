@@ -3,6 +3,12 @@ export class Registers {
         0, -1, 32, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0
     ]
 
+    constructor(registers?: number[]) {
+        if (registers) {
+            this._registers = registers
+        }
+    }
+
     get registers(): number[] {
         return this._registers.slice()
     }
@@ -26,5 +32,9 @@ export class Registers {
             throw new Error(`invalid register index '${index}', must be 0 <= x <= 31`)
         }
         this._registers[index] = value
+    }
+
+    copy() {
+        return new Registers(this._registers.slice())
     }
 }

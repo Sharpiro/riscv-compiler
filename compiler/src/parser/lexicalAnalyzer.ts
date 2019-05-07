@@ -20,7 +20,7 @@ export class LexicalAnalyzer {
             const token = this.analyzeTokenAndTrivia()
             tokens.push(token)
         }
-        return new SyntaxTokens(tokens)
+        return new SyntaxTokens(tokens, this.sourceCode)
     }
 
     private analyzeTokenAndTrivia(): Token {
@@ -117,7 +117,7 @@ export class LexicalAnalyzer {
                 break
             case ",":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = SyntaxKind.Comma
+                tokenKind = SyntaxKind.CommaToken
                 this.sourceCode.nextChar()
                 break
             case "-":
@@ -127,12 +127,17 @@ export class LexicalAnalyzer {
                 break
             case "(":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = SyntaxKind.OpenParen
+                tokenKind = SyntaxKind.OpenParenToken
                 this.sourceCode.nextChar()
                 break
             case ")":
                 span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
-                tokenKind = SyntaxKind.CloseParen
+                tokenKind = SyntaxKind.CloseParenToken
+                this.sourceCode.nextChar()
+                break
+            case "#":
+                span = new TextSpan(this.sourceCode.currentIndex, this.sourceCode.currentIndex + 1)
+                tokenKind = SyntaxKind.StateToken
                 this.sourceCode.nextChar()
                 break
             case "\0":
@@ -197,7 +202,7 @@ export class LexicalAnalyzer {
         const lowNumberLimit = "0".charCodeAt(0)
         const highNumberLimit = "9".charCodeAt(0)
 
-        return characterCode >= lowNumberLimit &&
-            characterCode <= highNumberLimit
+        const isNumber = characterCode >= lowNumberLimit && characterCode <= highNumberLimit
+        return isNumber
     }
 }

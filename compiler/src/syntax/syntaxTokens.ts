@@ -1,12 +1,12 @@
 import { Token, SyntaxKind } from "./token";
+import { SourceCode } from "../parser/sourceCode";
 
 export class SyntaxTokens {
-    private readonly syntaxTokens: Token[]
-
     private currentIndex = 0
 
-    constructor(syntaxTokens: Token[]) {
-        this.syntaxTokens = syntaxTokens
+    constructor(
+        readonly syntaxTokens: Token[],
+        private readonly sourceCode: SourceCode) {
     }
 
     get hasNext(): boolean {
@@ -20,8 +20,11 @@ export class SyntaxTokens {
     eatToken(expectedTokenKind?: SyntaxKind): Token {
         const currentToken = this.syntaxTokens[this.currentIndex]
         if (expectedTokenKind && currentToken.kind !== expectedTokenKind) {
+            const lineInfo = this.sourceCode.getLineInfo(currentToken.span.start)
             const expectedTokenKindText = SyntaxKind[expectedTokenKind]
-            throw new Error(`Expected '${expectedTokenKindText}', but was actually '${currentToken.kindText}'`)
+            throw new Error(`[${lineInfo.line}, ${lineInfo.column}, ` +
+                `${currentToken.span.start}]: Expected '${expectedTokenKindText}' ` +
+                `but was actually '${currentToken.kindText}'`)
         }
         this.currentIndex++
         return currentToken
