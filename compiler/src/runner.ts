@@ -6,30 +6,30 @@ import {
     MemoryCommand, AddCommand, CallPseudoCommand, JumpRegisterPseudoCommand
 } from "./syntax/addCommandSyntax";
 import { SyntaxKind } from "./syntax/token";
+import { SourceCode } from "./parser/sourceCode";
 
-export class Execution {
-    registers: Registers
+export interface Snapshot {
+    registers: Registers,
     memory: Buffer
+}
 
-    constructor(registers: Registers, memory: Buffer) {
-        this.registers = registers
-        this.memory = memory
-    }
+export class CompilationError extends Error {
+    name = CompilationError.name
 }
 
 export class Runner {
-    private readonly compilation: Compilation
     private readonly commandSizeBytes = 1
     private readonly registers = new Registers()
     private readonly memory = Buffer.alloc(32)
-    private snapshots: Execution[] = []
+    private snapshots: Snapshot[] = []
     private programCounter = 0
 
-    constructor(compilation: Compilation) {
-        this.compilation = compilation
-    }
+    constructor(
+        private readonly compilation: Compilation,
+        private readonly sourceCode: SourceCode
+    ) { }
 
-    run(): Execution[] {
+    run(): Snapshot[] {
         const mainFunctionLabel = this.compilation.labels.main
         if (!mainFunctionLabel) {
             throw new Error("Could not find 'main' entry point into program")
@@ -41,46 +41,51 @@ export class Runner {
             this.runCommand(currentCommand)
         }
 
-        this.snapshots.push(new Execution(this.registers, this.memory))
+        this.snapshots.push({ registers: this.registers, memory: this.memory })
         return this.snapshots
     }
 
     private runCommand(command: Command): void {
         let incrementProgramCounter = true
-        switch (command.nameToken.value) {
-            case "#":
-                const newBuffer = Buffer.alloc(this.memory.length)
-                this.memory.copy(newBuffer)
-                this.snapshots.push(new Execution(this.registers.copy(), newBuffer))
-                break;
-            case "add":
-                this.runAddCommand(command as AddCommand)
-                break
-            case "addi":
-                this.runAddImmediateCommand(command as AddImmediateCommand)
-                break
-            case "sb":
-            case "sw":
-            case "sd":
-            case "lw":
-            case "ld":
-                this.runMemoryCommand(command as MemoryCommand)
-                break
-            case "call":
-                // case "jal":
-                this.runCallPseudoCommand(command as CallPseudoCommand)
-                incrementProgramCounter = false
-                break
-            case "jr":
-                this.runJumpRegisterPseudoCommand(command as JumpRegisterPseudoCommand)
-                incrementProgramCounter = false
-                break
-            case "ret":
-                this.runReturnPseudoCommand(command)
-                incrementProgramCounter = false
-                break
-            default:
-                throw new Error(`invalid command '${command.kindText}'`)
+        try {
+            switch (command.nameToken.value) {
+                case "#":
+                    const newBuffer = Buffer.alloc(this.memory.length)
+                    this.memory.copy(newBuffer)
+                    this.snapshots.push({ registers: this.registers.copy(), memory: newBuffer })
+                    break;
+                case "add":
+                    this.runAddCommand(command as AddCommand)
+                    break
+                case "addi":
+                    this.runAddImmediateCommand(command as AddImmediateCommand)
+                    break
+                case "sb":
+                case "sw":
+                case "sd":
+                case "lw":
+                case "ld":
+                    this.runMemoryCommand(command as MemoryCommand)
+                    break
+                case "call":
+                    // case "jal":
+                    this.runCallPseudoCommand(command as CallPseudoCommand)
+                    incrementProgramCounter = false
+                    break
+                case "jr":
+                    this.runJumpRegisterPseudoCommand(command as JumpRegisterPseudoCommand)
+                    incrementProgramCounter = false
+                    break
+                case "ret":
+                    this.runReturnPseudoCommand(command)
+                    incrementProgramCounter = false
+                    break
+                default:
+                    throw new Error(`invalid command '${command.kindText}'`)
+            }
+        } catch (err) {
+            const lineInfo = command.getLine(this.sourceCode)
+            throw new CompilationError(`test.riscv: [${lineInfo.line}, ${lineInfo.column}]: error: ${err.message}`)
         }
 
         if (incrementProgramCounter) {
@@ -89,22 +94,18 @@ export class Runner {
     }
 
     private runAddCommand(command: AddCommand): void {
-        const sourceRegisterOne = this.parseRegisterFromString(command.sourceRegisterOneToken.value)
-        const sourceRegisterTwo = this.parseRegisterFromString(command.sourceRegisterTwoToken.value)
-        const destinationRegister = this.parseRegisterFromString(command.destinationRegisterToken.value)
-        const valueOne = this.registers.get(sourceRegisterOne)
-        const valueTwo = this.registers.get(sourceRegisterTwo)
+        const valueOne = this.registers.getByName(command.sourceRegisterOneToken.value)
+        const valueTwo = this.registers.getByName(command.sourceRegisterTwoToken.value)
         const result = valueOne + valueTwo
-        this.registers.set(destinationRegister, result)
+        this.registers.setByName(command.destinationRegisterToken.value, result)
     }
 
     private runAddImmediateCommand(command: AddImmediateCommand): void {
-        const sourceRegister = this.parseRegisterFromString(command.sourceRegisterToken.value)
-        const sourceRegisterValue = this.registers.get(sourceRegister)
-        const destinationRegister = this.parseRegisterFromString(command.destinationRegisterToken.value)
+        const sourceRegisterValue = this.registers.getByName(command.sourceRegisterToken.value as string)
+        const destinationRegister = command.destinationRegisterToken.value as string
         const constantValue = this.evaluateExpression(command.expression)
         const addResult = sourceRegisterValue + constantValue
-        this.registers.set(destinationRegister, addResult)
+        this.registers.setByName(destinationRegister, addResult)
     }
 
     private evaluateExpression(expression: Expression): number {
@@ -170,29 +171,31 @@ export class Runner {
                 throw new Error(`Invalid memory command '${command.kind}'`)
         }
 
-        const memoryRegister = this.parseRegisterFromString(command.memoryRegisterToken.value)
-        const memoryAddress = this.registers.get(memoryRegister)
+        const memoryAddress = this.registers.getByName(command.memoryRegisterToken.value)
         const memoryOffsetConstant = +command.memoryOffsetToken.value
-        const dataRegister = this.parseRegisterFromString(command.dataRegisterToken.value)
+        let dataRegisterValue = this.registers.getByName(command.dataRegisterToken.value)
 
         if (commandType === "store") {
-            this.writeLEToMemory(dataRegister, memoryAddress, memoryOffsetConstant, byteCount)
+            this.writeLEToMemory(dataRegisterValue, memoryAddress, memoryOffsetConstant, byteCount)
         } else {
-            this.readLEFromMemory(dataRegister, memoryAddress, memoryOffsetConstant, byteCount)
+            const number = this.readLEFromMemory(memoryAddress, memoryOffsetConstant, byteCount)
+            this.registers.setByName(command.dataRegisterToken.value, number)
         }
     }
 
     private runCallPseudoCommand(command: CallPseudoCommand): void {
         const returnRegister = 1
         const procedureLabel = this.compilation.labels[command.functionName.value]
+        if (!procedureLabel) {
+            throw new CompilationError(`label '${command.functionName.value}' is not defined`)
+        }
 
         this.registers.set(returnRegister, this.programCounter + this.commandSizeBytes)
         this.programCounter = procedureLabel.address
     }
 
     private runJumpRegisterPseudoCommand(command: JumpRegisterPseudoCommand): void {
-        const returnRegister = this.parseRegisterFromString(command.returnRegisterToken.value)
-        const returnAddress = this.registers.get(returnRegister)
+        const returnAddress = this.registers.getByName(command.returnRegisterToken.value)
 
         if (returnAddress === -1) {
             this.programCounter += this.commandSizeBytes
@@ -226,23 +229,22 @@ export class Runner {
     //     }
     // }
 
-    private writeLEToMemory(dataRegister: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
-        let dataValue = this.registers.get(dataRegister)
+    private writeLEToMemory(value: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
         const iterations = sizeBytes - 1
         let index = memoryBaseAddress + offset
         if (index + iterations >= this.memory.length) {
             throw new Error(`insufficient memory (${this.memory.length} bytes)to write '${sizeBytes}'
                 bytes @ baseAddress '${memoryBaseAddress}', offset '${offset} (index '${index}')`)
         }
-        this.memory[index] = dataValue & 255
+        this.memory[index] = value & 255
         for (let i = 0; i < iterations; i++) {
-            dataValue = dataValue >>> 8
+            value = value >>> 8
             index++
-            this.memory[index] = dataValue
+            this.memory[index] = value
         }
     }
 
-    private readLEFromMemory(dataRegister: number, memoryBaseAddress: number, offset: number, sizeBytes: number) {
+    private readLEFromMemory(memoryBaseAddress: number, offset: number, sizeBytes: number) {
         const iterations = sizeBytes - 1
         const startIndex = memoryBaseAddress + offset
         const endIndex = memoryBaseAddress + offset + iterations
@@ -253,8 +255,7 @@ export class Runner {
             const orOp = shiftOp | this.memory[index]
             number = orOp
         }
-
-        this.registers.set(dataRegister, number)
+        return number
     }
 
     private parseRegisterFromString(registerText: string): number {

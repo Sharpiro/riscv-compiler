@@ -1,4 +1,5 @@
 import { Token, SyntaxKind } from "./token";
+import { SourceCode } from "../parser/sourceCode";
 
 export class SyntaxNode {
     kind: SyntaxKind
@@ -18,6 +19,10 @@ export class Command extends SyntaxNode {
     constructor(name: Token, kind: SyntaxKind) {
         super(kind);
         this.nameToken = name
+    }
+
+    getLine(sourceCode: SourceCode) {
+        return sourceCode.getLineInfo(this.nameToken.span.start)
     }
 }
 

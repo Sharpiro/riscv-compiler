@@ -16,7 +16,9 @@ export class RiscVParser {
     private commandNames: { [key: string]: boolean } = {
         add: true,
         addi: true,
+        sw: true,
         sd: true,
+        lw: true,
         ld: true,
         jr: true,
         call: true,
@@ -51,7 +53,7 @@ export class RiscVParser {
         // commands.push(temp)
         // commands.push(temp)
         // commands.push(temp)
-        return new Compilation(commands, this.labels)
+        return { commands, labels: this.labels }
     }
 
     private parseCommandOrLabel(): Command | Label {
@@ -101,7 +103,7 @@ export class RiscVParser {
                 command = this.parseCallPseudoCommand(nameToken)
                 break;
             case "#":
-                command = new Command(nameToken, SyntaxKind.StateCommand) 
+                command = new Command(nameToken, SyntaxKind.StateCommand)
                 break;
             default:
                 throw new Error(`invalid command '${nameToken.valueText}'`)

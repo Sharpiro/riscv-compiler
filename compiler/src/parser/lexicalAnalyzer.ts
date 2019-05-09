@@ -95,7 +95,7 @@ export class LexicalAnalyzer {
         let endIndex = startIndex + 2
 
         this.sourceCode.nextChar(2)
-        while (this.sourceCode.peekChar !== this.endOfLineTrivia) {
+        while (this.sourceCode.peekChar && this.sourceCode.peekChar !== this.endOfLineTrivia) {
             this.sourceCode.nextChar()
             endIndex++
         }

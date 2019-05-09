@@ -22,7 +22,7 @@ export class SourceCode {
 
     constructor(source: string) {
         this.source = source.replace(/\r/g, "")
-        this.source = this.source + "\0"
+        this.source = this.source + "\n\0"
     }
 
     peekCharMulti(lookAhead = 1): string {
@@ -81,7 +81,7 @@ export class SourceCode {
                 maxIndex = range.line - 1
                 index = Math.floor((minIndex + maxIndex) / 2)
             } else {
-                minIndex = range.line - 1
+                minIndex = range.line - 1 !== minIndex ? range.line - 1 : range.line
                 index = Math.floor((minIndex + maxIndex) / 2)
             }
         }

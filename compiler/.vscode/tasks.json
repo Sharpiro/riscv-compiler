@@ -3,8 +3,25 @@
     "tasks": [
         {
             "label": "run",
+            "command": "ts-node",
             "type": "shell",
-            "command": "ts-node src/main.ts"
+            "args": [
+                "src/main.ts"
+            ],
+            "problemMatcher": {
+                "fileLocation": [
+                    "relative",
+                    "${workspaceRoot}"
+                ],
+                "pattern": {
+                    "regexp": "^([\\s\\S]*?): \\[(\\d*), (\\d*)\\]: (error): (.*)$",
+                    "file": 1,
+                    "line": 2,
+                    "column": 3,
+                    "severity": 4,
+                    "message": 5
+                }
+            }
         }
     ]
 }
